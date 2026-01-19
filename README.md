@@ -32,6 +32,55 @@ A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL S
 - **Strict compilation** — built with aggressive warnings & safety checks  
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 
+## Quick Start (User)
+
+Download the latest Windows executable from the **Actions → Artifacts** page:
+- https://github.com/nickscha/shade_it/actions
+
+Extract the archive and run `win32_shade_it.exe`.  
+
+You can run the program like this:
+
+```bat
+REM This expects a file named "shade_it.fs" to be present
+win32_shade_it.exe
+
+REM Alternativly you can define your own fragment shader file
+win32_shade_it.exe my_custom_shader.fs
+```
+
+If you want to create your own GLSL fragment shader from scratch you can use this template providing all uniforms `shade_it` hands over to the fragment shader:
+
+```glsl
+#version 330 core
+
+out vec4 FragColor;
+
+/* Uniforms provided */
+uniform vec3  iResolution;
+uniform float iTime;
+uniform float iTimeDelta;
+uniform int   iFrame;
+uniform float iFrameRate;
+
+void mainImage(out vec4 outColor, in vec2 fragCoord)
+{
+  vec2 uv = fragCoord / iResolution.xy;
+  float t = iTime;
+  outColor = vec4(uv, 0.5 + 0.5 * sin(t), 1.0);
+}
+
+void main()
+{
+  vec2 fragCoord = gl_FragCoord.xy;
+  mainImage(FragColor, fragCoord);
+}
+```
+
+## Quick Start (Developers)
+
+Building this single source file program can be done by calling the `win32_shade_it_build.bat` script.
+
 ## "nostdlib" Motivation & Purpose
 
 nostdlib is a lightweight, minimalistic approach to C development that removes dependencies on the standard library. The motivation behind this project is to provide developers with greater control over their code by eliminating unnecessary overhead, reducing binary size, and enabling deployment in resource-constrained environments.
