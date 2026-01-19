@@ -354,6 +354,9 @@ QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
 WIN32_API(int)
 QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
 
+WIN32_API(char *)
+GetCommandLineA(void);
+
 /* WGL */
 WIN32_API(void *)
 wglCreateContext(void *unnamedParam1);
@@ -606,11 +609,60 @@ SHADE_IT_API unsigned char *win32_read_file(char *filename, unsigned int *file_s
   return buffer;
 }
 
-FILETIME win32_file_mod_time(char *file)
+SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(char *file)
 {
   static FILETIME empty = {0, 0};
   WIN32_FILE_ATTRIBUTE_DATA fad;
   return GetFileAttributesExA(file, GetFileExInfoStandard, &fad) ? fad.ftLastWriteTime : empty;
+}
+
+/* ############################################################################
+ * # Command line parsing
+ * ############################################################################
+ *
+ * Basic (non-quoted) command line parser
+ * Converts "program.exe arg1 arg2" -> argc=3, argv={"program.exe","arg1","arg2",NULL}
+ * In-place: modifies the command line buffer.
+ */
+SHADE_IT_API int win32_parse_command_line(unsigned char *cmdline, unsigned char ***argv_out)
+{
+  static unsigned char *argv_local[8]; /* up to 8 args */
+  int argc = 0;
+
+  while (*cmdline)
+  {
+    /* skip whitespace */
+    while (*cmdline == ' ' || *cmdline == '\t')
+    {
+      cmdline++;
+    }
+
+    if (!*cmdline)
+    {
+      break;
+    }
+
+    if (argc < 63)
+    {
+      argv_local[argc++] = cmdline;
+    }
+
+    /* parse token (basic, no quote handling) */
+    while (*cmdline && *cmdline != ' ' && *cmdline != '\t')
+    {
+      cmdline++;
+    }
+
+    if (*cmdline)
+    {
+      *cmdline++ = '\0';
+    }
+  }
+
+  argv_local[argc] = (unsigned char *)0;
+  *argv_out = argv_local;
+
+  return argc;
 }
 
 SHADE_IT_API int opengl_shader_compile(
@@ -743,7 +795,7 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
 
       shader->created = 1;
 
-      win32_print("[opengl] fragment shader reloaded\n");
+      win32_print("[opengl] fragment shader loaded\n");
     }
     else
     {
@@ -754,14 +806,7 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
   }
 }
 
-#ifdef __clang__
-#elif __GNUC__
-__attribute((externally_visible))
-#endif
-#ifdef __i686__
-__attribute((force_align_arg_pointer))
-#endif
-int mainCRTStartup(void)
+SHADE_IT_API int start(int argc, unsigned char **argv)
 {
   void *window_handle = (void *)0;
   void *dc = (void *)0;
@@ -769,8 +814,16 @@ int mainCRTStartup(void)
   char *fragment_shader_file_name = "shade_it.fs";
 
   shader main_shader = {0};
-
   shade_it_state state = {0};
+
+  if (argv && argc > 1)
+  {
+    fragment_shader_file_name = (char *)argv[1];
+  }
+
+  win32_print("[opengl] load shader file: ");
+  win32_print(fragment_shader_file_name);
+  win32_print("\n");
 
   state.running = 1;
   state.window_width = 800;
@@ -1164,9 +1217,26 @@ int mainCRTStartup(void)
     }
   }
 
-  ExitProcess(0);
-
   return 0;
+}
+
+#ifdef __clang__
+#elif __GNUC__
+__attribute((externally_visible))
+#endif
+#ifdef __i686__
+__attribute((force_align_arg_pointer))
+#endif
+int mainCRTStartup(void)
+{
+  unsigned char *cmdline = (unsigned char *)GetCommandLineA();
+  unsigned char **argv;
+
+  int argc = win32_parse_command_line(cmdline, &argv);
+  int return_code = start(argc, argv);
+
+  ExitProcess((unsigned int)return_code);
+  return return_code;
 }
 
 /*
