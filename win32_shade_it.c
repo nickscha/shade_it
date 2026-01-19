@@ -61,6 +61,10 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD For
 #define WM_QUIT 0x0012
 #define WM_SIZE 0x0005
 
+#define HWND_TOPMOST ((void *)-1)
+#define SWP_NOSIZE 0x0001
+#define SWP_NOMOVE 0x0002
+
 #define CS_OWNDC 0x0020
 
 #define WS_CLIPSIBLINGS 0x04000000
@@ -313,6 +317,9 @@ RegisterClassA(WNDCLASSA *lpWndClass);
 
 WIN32_API(void *)
 CreateWindowExA(unsigned long dwExStyle, char *lpClassName, char *lpWindowName, unsigned long dwStyle, int X, int Y, int nWidth, int nHeight, void *hWndParent, void *hMenu, void *hInstance, void *lpParam);
+
+WIN32_API(int)
+SetWindowPos(void *hWnd, void *hWndInsertAfter, int X, int Y, int cx, int cy, unsigned int uFlags);
 
 WIN32_API(void *)
 GetDC(void *hWnd);
@@ -679,19 +686,73 @@ SHADE_IT_API int opengl_shader_create(
   return 1;
 }
 
-static char *shader_code_vertex =
-    "#version 330 core\n"
-    "\n"
-    " vec2 positions[3] = vec2[3](\n"
-    "  vec2(-1.0, -1.0),\n"
-    "  vec2( 3.0, -1.0),\n"
-    "  vec2(-1.0,  3.0)\n"
-    ");\n"
-    "\n"
-    "void main()\n"
-    "{\n"
-    "  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);\n"
-    "}\n";
+typedef struct shader
+{
+  unsigned int created;
+  unsigned int program;
+
+  int loc_iResolution;
+  int loc_iTime;
+  int loc_iTimeDelta;
+  int loc_iFrame;
+  int loc_iFrameRate;
+
+} shader;
+
+SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
+{
+  static char *shader_code_vertex =
+      "#version 330 core\n"
+      "\n"
+      " vec2 positions[3] = vec2[3](\n"
+      "  vec2(-1.0, -1.0),\n"
+      "  vec2( 3.0, -1.0),\n"
+      "  vec2(-1.0,  3.0)\n"
+      ");\n"
+      "\n"
+      "void main()\n"
+      "{\n"
+      "  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);\n"
+      "}\n";
+
+  unsigned int size = 0;
+  unsigned char *src = win32_read_file(shader_file_name, &size);
+
+  if (src && size > 0)
+  {
+    unsigned int new_program = 0;
+
+    if (opengl_shader_create(&new_program, shader_code_vertex, (char *)src))
+    {
+      glUseProgram(0);
+
+      if (shader->created)
+      {
+        glDeleteProgram(shader->program);
+      }
+
+      shader->program = new_program;
+
+      glUseProgram(shader->program);
+
+      shader->loc_iResolution = glGetUniformLocation(shader->program, "iResolution");
+      shader->loc_iTime = glGetUniformLocation(shader->program, "iTime");
+      shader->loc_iTimeDelta = glGetUniformLocation(shader->program, "iTimeDelta");
+      shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
+      shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
+
+      shader->created = 1;
+
+      win32_print("[hotreload] fragment shader reloaded\n");
+    }
+    else
+    {
+      win32_print("[hotreload] compile failed, keeping old shader\n");
+    }
+
+    VirtualFree(src, 0, MEM_RELEASE);
+  }
+}
 
 #ifdef __clang__
 #elif __GNUC__
@@ -705,7 +766,7 @@ int mainCRTStartup(void)
   void *window_handle = (void *)0;
   void *dc = (void *)0;
 
-  unsigned int shader_program = 0;
+  shader main_shader = {0};
 
   shade_it_state state = {0};
 
@@ -831,6 +892,9 @@ int mainCRTStartup(void)
         &state /* Pass pointer to user data to the window callback */
     );
 
+    /* Modal window */
+    SetWindowPos(window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
     dc = GetDC(window_handle);
 
 #ifdef _MSC_VER
@@ -927,27 +991,13 @@ int mainCRTStartup(void)
   glViewport(0, 0, (int)state.window_width, (int)state.window_height);
 
   {
+    /* Generate a dummy vao with no buffer */
     unsigned int vao;
-    unsigned int shader_code_fragment_file_size = 0;
-    unsigned char *shader_code_fragment = win32_read_file("shade_it.fs", &shader_code_fragment_file_size);
-
-    if (shader_code_fragment_file_size < 1)
-    {
-      ExitProcess(1);
-      return 1;
-    }
-
-    if (!opengl_shader_create(&shader_program, shader_code_vertex, (char *)shader_code_fragment))
-    {
-      ExitProcess(1);
-      return 1;
-    }
-
-    VirtualFree(shader_code_fragment, 0, MEM_RELEASE);
-
-    glUseProgram(shader_program);
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+
+    /* TODO: check failures */
+    opengl_shader_load(&main_shader, "shade_it.fs");
   }
 
   {
@@ -960,12 +1010,6 @@ int mainCRTStartup(void)
     double iTime = 0.0;
     double iTimeDelta = 0.0;
     double iFrameRate = 0.0;
-
-    int loc_iResolution = glGetUniformLocation(shader_program, "iResolution");
-    int loc_iTime = glGetUniformLocation(shader_program, "iTime");
-    int loc_iTimeDelta = glGetUniformLocation(shader_program, "iTimeDelta");
-    int loc_iFrame = glGetUniformLocation(shader_program, "iFrame");
-    int loc_iFrameRate = glGetUniformLocation(shader_program, "iFrameRate");
 
     FILETIME fs_last = win32_file_mod_time("shade_it.fs");
 
@@ -1026,38 +1070,9 @@ int mainCRTStartup(void)
 
         if (CompareFileTime(&fs_now, &fs_last) != 0)
         {
-          unsigned int size = 0;
-          unsigned char *src = win32_read_file("shade_it.fs", &size);
-
-          if (src && size > 0)
-          {
-            unsigned int new_program = 0;
-
-            if (opengl_shader_create(&new_program, shader_code_vertex, (char *)src))
-            {
-              glUseProgram(0);
-              glDeleteProgram(shader_program);
-
-              shader_program = new_program;
-              glUseProgram(shader_program);
-
-              loc_iResolution = glGetUniformLocation(shader_program, "iResolution");
-              loc_iTime = glGetUniformLocation(shader_program, "iTime");
-              loc_iTimeDelta = glGetUniformLocation(shader_program, "iTimeDelta");
-              loc_iFrame = glGetUniformLocation(shader_program, "iFrame");
-              loc_iFrameRate = glGetUniformLocation(shader_program, "iFrameRate");
-
-              fs_last = fs_now;
-
-              win32_print("[hotreload] fragment shader reloaded\n");
-            }
-            else
-            {
-              win32_print("[hotreload] compile failed, keeping old shader\n");
-            }
-
-            VirtualFree(src, 0, MEM_RELEASE);
-          }
+          /* TODO: check failures */
+          opengl_shader_load(&main_shader, "shade_it.fs");
+          fs_last = fs_now;
         }
       }
 
@@ -1086,11 +1101,11 @@ int mainCRTStartup(void)
       /* Rendering                  */
       /******************************/
       glClear(GL_COLOR_BUFFER_BIT);
-      glUniform3f(loc_iResolution, (float)state.window_width, (float)state.window_height, 1.0f);
-      glUniform1f(loc_iTime, (float)iTime);
-      glUniform1f(loc_iTimeDelta, (float)iTimeDelta);
-      glUniform1i(loc_iFrame, iFrame);
-      glUniform1f(loc_iFrameRate, (float)iFrameRate);
+      glUniform3f(main_shader.loc_iResolution, (float)state.window_width, (float)state.window_height, 1.0f);
+      glUniform1f(main_shader.loc_iTime, (float)iTime);
+      glUniform1f(main_shader.loc_iTimeDelta, (float)iTimeDelta);
+      glUniform1i(main_shader.loc_iFrame, iFrame);
+      glUniform1f(main_shader.loc_iFrameRate, (float)iFrameRate);
       glDrawArrays(GL_TRIANGLES, 0, 3);
       SwapBuffers(dc);
 
