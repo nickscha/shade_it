@@ -49,6 +49,8 @@ REM Alternativly you can define your own fragment shader file
 win32_shade_it.exe my_custom_shader.fs
 ```
 
+While **running** you can **edit** and save the fragment shader source file and shade_it will immediatly **hot-reload** the code.
+
 If you want to create your own **GLSL fragment shader from scratch** you can use this **template** providing all uniforms `shade_it` hands over to the fragment shader:
 
 ```glsl
@@ -77,7 +79,7 @@ void main()
 }
 ```
 
-Under the **exmaples** folder you can find different kinds of fragment shaders for inspiration that you can run directly.
+Under the **examples** folder you can find different kinds of fragment shaders for inspiration that you can run directly.
 
 ## Quick Start (Developers)
 
