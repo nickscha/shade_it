@@ -953,6 +953,7 @@ int mainCRTStartup(void)
   {
     LARGE_INTEGER perf_freq;
     LARGE_INTEGER time_start;
+    LARGE_INTEGER time_start_fps_cap;
     LARGE_INTEGER time_last;
 
     int iFrame = 0;
@@ -989,6 +990,7 @@ int mainCRTStartup(void)
 
     QueryPerformanceFrequency(&perf_freq);
     QueryPerformanceCounter(&time_start);
+    QueryPerformanceCounter(&time_start_fps_cap);
     time_last = time_start;
 
     while (state.running)
@@ -1104,7 +1106,7 @@ int mainCRTStartup(void)
         QueryPerformanceCounter(&time_end);
 
         frame_time =
-            (double)(time_end.QuadPart - time_start.QuadPart) /
+            (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) /
             (double)perf_freq.QuadPart;
 
         remaining = target_frame_time - frame_time;
@@ -1127,7 +1129,7 @@ int mainCRTStartup(void)
             QueryPerformanceCounter(&time_end);
 
             frame_time =
-                (double)(time_end.QuadPart - time_start.QuadPart) /
+                (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) /
                 (double)perf_freq.QuadPart;
 
             if (frame_time >= target_frame_time)
@@ -1138,7 +1140,7 @@ int mainCRTStartup(void)
         }
 
         /* Start timing next frame */
-        time_start = time_end;
+        time_start_fps_cap = time_end;
       }
 
       iFrame++;
