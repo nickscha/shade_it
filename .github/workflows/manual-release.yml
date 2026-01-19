@@ -1,0 +1,75 @@
+name: Manual Release of shade_it.h with Changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version number for the new release (e.g., v0.1)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest release tag
+        id: get_tag
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Get commit logs
+        id: get_commits
+        run: |
+          if [ -z "${{ steps.get_tag.outputs.latest_tag }}" ]; then
+            log_range="HEAD"
+            echo "No previous tag found. All commits will be listed."
+          else
+            log_range="${{ steps.get_tag.outputs.latest_tag }}..HEAD"
+            echo "Listing commits since tag ${{ steps.get_tag.outputs.latest_tag }}"
+          fi
+          
+          commit_log=$(git log --pretty=format:'* %s (%h)' $log_range)
+          
+          echo "commits_body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$commit_log" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: "${{ github.event.inputs.version }}: shade_it.h release"
+          body: |
+            # ${{ github.event.inputs.version }}: shade_it - OpenGL Shader Playground Release.
+
+            A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
+
+            ---
+
+            ### **Changes**
+            
+            ${{ steps.get_commits.outputs.commits_body }}
+
+            ---
+
+            ### What's Included
+
+            This release includes the `shade_it.h` header file as well as testing and example codes ready to be used.
+
+            **Get started by downloading the source code today!**
+
+          draft: false
+          prerelease: false
