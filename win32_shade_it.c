@@ -1,4 +1,4 @@
-/* shade_it.h - v0.2 - public domain data structures - nickscha 2026
+/* shade_it.h - v0.3 - public domain data structures - nickscha 2026
 
 A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
 
