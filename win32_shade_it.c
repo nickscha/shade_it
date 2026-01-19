@@ -743,11 +743,11 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
 
       shader->created = 1;
 
-      win32_print("[hotreload] fragment shader reloaded\n");
+      win32_print("[opengl] fragment shader reloaded\n");
     }
     else
     {
-      win32_print("[hotreload] compile failed, keeping old shader\n");
+      win32_print("[opengl] compile failed, keeping old shader\n");
     }
 
     VirtualFree(src, 0, MEM_RELEASE);
@@ -765,6 +765,8 @@ int mainCRTStartup(void)
 {
   void *window_handle = (void *)0;
   void *dc = (void *)0;
+
+  char *fragment_shader_file_name = "shade_it.fs";
 
   shader main_shader = {0};
 
@@ -997,7 +999,7 @@ int mainCRTStartup(void)
     glBindVertexArray(vao);
 
     /* TODO: check failures */
-    opengl_shader_load(&main_shader, "shade_it.fs");
+    opengl_shader_load(&main_shader, fragment_shader_file_name);
   }
 
   {
@@ -1011,7 +1013,7 @@ int mainCRTStartup(void)
     double iTimeDelta = 0.0;
     double iFrameRate = 0.0;
 
-    FILETIME fs_last = win32_file_mod_time("shade_it.fs");
+    FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
 
     /* Print opengl information */
     {
@@ -1066,12 +1068,12 @@ int mainCRTStartup(void)
       /* Hot Reload Fragment Shader */
       /******************************/
       {
-        FILETIME fs_now = win32_file_mod_time("shade_it.fs");
+        FILETIME fs_now = win32_file_mod_time(fragment_shader_file_name);
 
         if (CompareFileTime(&fs_now, &fs_last) != 0)
         {
           /* TODO: check failures */
-          opengl_shader_load(&main_shader, "shade_it.fs");
+          opengl_shader_load(&main_shader, fragment_shader_file_name);
           fs_last = fs_now;
         }
       }
