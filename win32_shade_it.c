@@ -102,13 +102,8 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD For
 
 #define GL_TRUE 1
 #define GL_TRIANGLES 0x0004
-#define GL_DEPTH_TEST 0x0B71
-#define GL_DEPTH_BUFFER_BIT 0x00000100
 #define GL_COLOR_BUFFER_BIT 0x00004000
 #define GL_MULTISAMPLE 0x809D
-#define GL_CULL_FACE 0x0B44
-#define GL_BACK 0x0405
-#define GL_CCW 0x0901
 
 #if defined(_WIN64)
 
@@ -371,10 +366,6 @@ WIN32_API(void)
 glClearColor(float red, float green, float blue, float alpha);
 WIN32_API(void)
 glClear(unsigned int mask);
-WIN32_API(void)
-glCullFace(unsigned int mode);
-WIN32_API(void)
-glFrontFace(unsigned int mode);
 WIN32_API(void)
 glViewport(int x, int y, int width, int height);
 WIN32_API(void)
@@ -932,10 +923,6 @@ int mainCRTStartup(void)
   /******************************/
   /* OpenGL Preparation         */
   /******************************/
-  glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glFrontFace(GL_CCW);
   glDisable(GL_MULTISAMPLE);
   glViewport(0, 0, (int)state.window_width, (int)state.window_height);
 
@@ -1096,7 +1083,7 @@ int mainCRTStartup(void)
       /******************************/
       /* Rendering                  */
       /******************************/
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glClear(GL_COLOR_BUFFER_BIT);
       glUniform3f(loc_iResolution, (float)state.window_width, (float)state.window_height, 1.0f);
       glUniform1f(loc_iTime, (float)iTime);
       glUniform1f(loc_iTimeDelta, (float)iTimeDelta);
