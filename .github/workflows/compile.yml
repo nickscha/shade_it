@@ -1,0 +1,23 @@
+name: Compile the shade_it tool
+on: [push, pull_request]
+
+jobs:
+  windows:
+    strategy:
+      matrix:
+        cc: [gcc]
+        os: [windows-latest, windows-2025, windows-2022, windows-11-arm]
+        example: [win32_shade_it]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Compile ${{ matrix.example }}
+        run: ${{ matrix.cc }} -s -O2 -mconsole -march=native -mtune=native -std=c89 -pedantic -nodefaultlibs -nostdlib -mno-stack-arg-probe -Xlinker /STACK:0x100000,0x100000 -Xlinker /ENTRY:mainCRTStartup -fno-builtin -ffreestanding -fno-asynchronous-unwind-tables -fuse-ld=lld -Wall -Wextra -Werror -Wvla -Wconversion -Wdouble-promotion -Wmissing-field-initializers -Wuninitialized -Winit-self -Wunused -Wunused-macros -Wunused-local-typedefs ${{ matrix.example }}.c -o ${{ matrix.example }}_${{ matrix.cc }}.exe -lkernel32 -luser32 -lgdi32 -lopengl32
+      - name: Run ${{ matrix.example }}
+        run: .\${{ matrix.example }}_${{ matrix.cc }}.exe
+      - name: Upload ${{ matrix.example }} Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ matrix.cc }}-${{ matrix.example }}
+          path: ${{ matrix.example }}_${{ matrix.cc }}.exe
