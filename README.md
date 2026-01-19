@@ -1,5 +1,11 @@
 # shade_it
-A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
+A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
+
+<p align="center">
+<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/clouds.png"></a>
+<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/waves.png"></a>
+<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/trip.png"></a>
+</p>
 
 > [!WARNING]
 > THIS PROJECT IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS PROJECT AT YOUR OWN RISK!
@@ -20,8 +26,9 @@ A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL
 
 ## **Features**
 - **C89 compliant** — portable and legacy-friendly  
-- **nostdlib** — no dependency on the C Standard Library  
-- **Minimal binary size** — around 9kb executable
+- **nostdlib** — no dependency on the C Standard Library
+- **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
+- **Minimal binary size** — around 9kb binary
 - **Strict compilation** — built with aggressive warnings & safety checks  
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 
