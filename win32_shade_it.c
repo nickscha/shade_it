@@ -86,29 +86,6 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD For
 #define PFD_DRAW_TO_WINDOW 0x00000004
 #define PFD_TYPE_RGBA 0
 
-#define WGL_DRAW_TO_WINDOW_ARB 0x2001
-#define WGL_SUPPORT_OPENGL_ARB 0x2010
-#define WGL_DOUBLE_BUFFER_ARB 0x2011
-#define WGL_PIXEL_TYPE_ARB 0x2013
-#define WGL_TYPE_RGBA_ARB 0x202B
-#define WGL_ACCELERATION_ARB 0x2003
-#define WGL_FULL_ACCELERATION_ARB 0x2027
-#define WGL_COLOR_BITS_ARB 0x2014
-#define WGL_ALPHA_BITS_ARB 0x201B
-#define WGL_DEPTH_BITS_ARB 0x2022
-#define WGL_STENCIL_BITS_ARB 0x2023
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
-#define WGL_CONTEXT_FLAGS_ARB 0x2094
-#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
-
-#define GL_TRUE 1
-#define GL_TRIANGLES 0x0004
-#define GL_COLOR_BUFFER_BIT 0x00004000
-#define GL_MULTISAMPLE 0x809D
-
 #if defined(_WIN64)
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -360,28 +337,38 @@ GetCommandLineA(void);
 /* WGL */
 WIN32_API(void *)
 wglCreateContext(void *unnamedParam1);
+
 WIN32_API(void *)
 wglGetCurrentContext(void);
+
 WIN32_API(void *)
 wglGetCurrentDC(void);
+
 WIN32_API(int)
 wglDeleteContext(void *unnamedParam1);
+
 WIN32_API(int)
 wglMakeCurrent(void *unnamedParam1, void *unnamedParam2);
+
 WIN32_API(PROC)
 wglGetProcAddress(char *unnamedParam1);
 
 /* OpenGL functions provided by win32 */
 WIN32_API(void)
 glClearColor(float red, float green, float blue, float alpha);
+
 WIN32_API(void)
 glClear(unsigned int mask);
+
 WIN32_API(void)
 glViewport(int x, int y, int width, int height);
+
 WIN32_API(void)
 glEnable(unsigned int cap);
+
 WIN32_API(void)
 glDisable(unsigned int cap);
+
 WIN32_API(unsigned char *)
 glGetString(unsigned int name);
 
@@ -390,9 +377,105 @@ glGetString(unsigned int name);
  * # Needs to be loaded during runtime
  * #############################################################################
  */
+#define WGL_DRAW_TO_WINDOW_ARB 0x2001
+#define WGL_SUPPORT_OPENGL_ARB 0x2010
+#define WGL_DOUBLE_BUFFER_ARB 0x2011
+#define WGL_PIXEL_TYPE_ARB 0x2013
+#define WGL_TYPE_RGBA_ARB 0x202B
+#define WGL_ACCELERATION_ARB 0x2003
+#define WGL_FULL_ACCELERATION_ARB 0x2027
+#define WGL_COLOR_BITS_ARB 0x2014
+#define WGL_ALPHA_BITS_ARB 0x201B
+#define WGL_DEPTH_BITS_ARB 0x2022
+#define WGL_STENCIL_BITS_ARB 0x2023
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
+
 typedef int (*PFNWGLCHOOSEPIXELFORMATARBPROC)(void *hdc, int *piAttribIList, float *pfAttribFList, unsigned int nMaxFormats, int *piFormats, unsigned int *nNumFormats);
+static PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
+
 typedef void *(*PFNWGLCREATECONTEXTATTRIBSARBPROC)(void *hDC, void *hShareContext, int *attribList);
+static PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+
 typedef int (*PFNWGLSWAPINTERVALEXTPROC)(int interval);
+static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
+
+/* OpenGL functions directly part of opengl32 lib */
+#define GL_TRUE 1
+#define GL_TRIANGLES 0x0004
+#define GL_COLOR_BUFFER_BIT 0x00004000
+#define GL_MULTISAMPLE 0x809D
+#define GL_COMPILE_STATUS 0x8B81
+#define GL_VERTEX_SHADER 0x8B31
+#define GL_FRAGMENT_SHADER 0x8B30
+#define GL_LINK_STATUS 0x8B82
+#define GL_VENDOR 0x1F00
+#define GL_RENDERER 0x1F01
+#define GL_VERSION 0x1F02
+
+typedef unsigned int (*PFNGLCREATESHADERPROC)(unsigned int shaderType);
+static PFNGLCREATESHADERPROC glCreateShader;
+
+typedef unsigned int (*PFNGLCREATEPROGRAMPROC)(void);
+static PFNGLCREATEPROGRAMPROC glCreateProgram;
+
+typedef void (*PFNGLDELETEPROGRAMPROC)(unsigned int program);
+static PFNGLDELETEPROGRAMPROC glDeleteProgram;
+
+typedef void (*PFNGLATTACHSHADERPROC)(unsigned int program, unsigned int shader);
+static PFNGLATTACHSHADERPROC glAttachShader;
+
+typedef void (*PFNGLSHADERSOURCEPROC)(unsigned int shader, int count, char **string, int *length);
+static PFNGLSHADERSOURCEPROC glShaderSource;
+
+typedef void (*PFNGLCOMPILESHADERPROC)(unsigned int shader);
+static PFNGLCOMPILESHADERPROC glCompileShader;
+
+typedef void (*PFNGLGETSHADERIVPROC)(unsigned int shader, unsigned int pname, int *params);
+static PFNGLGETSHADERIVPROC glGetShaderiv;
+
+typedef void (*PFNGLGETSHADERINFOLOGPROC)(unsigned int shader, int maxLength, int *length, char *infoLog);
+static PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+
+typedef void (*PFNGLLINKPROGRAMPROC)(unsigned int program);
+static PFNGLLINKPROGRAMPROC glLinkProgram;
+
+typedef void (*PFNGLGETPROGRAMIVPROC)(unsigned int program, unsigned int pname, int *params);
+static PFNGLGETPROGRAMIVPROC glGetProgramiv;
+
+typedef void (*PFNGLGETPROGRAMINFOLOGPROC)(unsigned int program, int maxLength, int *length, char *infoLog);
+static PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+
+typedef void (*PFNGLDELETESHADERPROC)(unsigned int shader);
+static PFNGLDELETESHADERPROC glDeleteShader;
+
+typedef void (*PFNGLDRAWARRAYSPROC)(unsigned int mode, int first, int count);
+static PFNGLDRAWARRAYSPROC glDrawArrays;
+
+typedef void (*PFNGLUSEPROGRAMPROC)(unsigned int program);
+static PFNGLUSEPROGRAMPROC glUseProgram;
+
+typedef void (*PFNGLGENVERTEXARRAYSPROC)(int n, unsigned int *arrays);
+static PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+
+typedef void (*PFNGLBINDVERTEXARRAYPROC)(unsigned int array);
+static PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+
+typedef int (*PFNGLGETUNIFORMLOCATIONPROC)(unsigned int program, char *name);
+static PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
+
+typedef void (*PFNGLUNIFORM1FPROC)(int location, float v0);
+static PFNGLUNIFORM1FPROC glUniform1f;
+
+typedef void (*PFNGLUNIFORM1IPROC)(int location, int v0);
+static PFNGLUNIFORM1IPROC glUniform1i;
+
+typedef void (*PFNGLUNIFORM3FPROC)(int location, float v0, float v1, float v2);
+static PFNGLUNIFORM3FPROC glUniform3f;
 
 /* #############################################################################
  * # Main Code
@@ -462,74 +545,6 @@ SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_shade_it_window_c
   return (result);
 }
 
-#define GL_COMPILE_STATUS 0x8B81
-#define GL_VERTEX_SHADER 0x8B31
-#define GL_FRAGMENT_SHADER 0x8B30
-#define GL_LINK_STATUS 0x8B82
-#define GL_VENDOR 0x1F00
-#define GL_RENDERER 0x1F01
-#define GL_VERSION 0x1F02
-
-typedef unsigned int (*PFNGLCREATESHADERPROC)(unsigned int shaderType);
-static PFNGLCREATESHADERPROC glCreateShader;
-
-typedef unsigned int (*PFNGLCREATEPROGRAMPROC)(void);
-static PFNGLCREATEPROGRAMPROC glCreateProgram;
-
-typedef void (*PFNGLDELETEPROGRAMPROC)(unsigned int program);
-static PFNGLDELETEPROGRAMPROC glDeleteProgram;
-
-typedef void (*PFNGLATTACHSHADERPROC)(unsigned int program, unsigned int shader);
-static PFNGLATTACHSHADERPROC glAttachShader;
-
-typedef void (*PFNGLSHADERSOURCEPROC)(unsigned int shader, int count, char **string, int *length);
-static PFNGLSHADERSOURCEPROC glShaderSource;
-
-typedef void (*PFNGLCOMPILESHADERPROC)(unsigned int shader);
-static PFNGLCOMPILESHADERPROC glCompileShader;
-
-typedef void (*PFNGLGETSHADERIVPROC)(unsigned int shader, unsigned int pname, int *params);
-static PFNGLGETSHADERIVPROC glGetShaderiv;
-
-typedef void (*PFNGLGETSHADERINFOLOGPROC)(unsigned int shader, int maxLength, int *length, char *infoLog);
-static PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
-
-typedef void (*PFNGLLINKPROGRAMPROC)(unsigned int program);
-static PFNGLLINKPROGRAMPROC glLinkProgram;
-
-typedef void (*PFNGLGETPROGRAMIVPROC)(unsigned int program, unsigned int pname, int *params);
-static PFNGLGETPROGRAMIVPROC glGetProgramiv;
-
-typedef void (*PFNGLGETPROGRAMINFOLOGPROC)(unsigned int program, int maxLength, int *length, char *infoLog);
-static PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
-
-typedef void (*PFNGLDELETESHADERPROC)(unsigned int shader);
-static PFNGLDELETESHADERPROC glDeleteShader;
-
-typedef void (*PFNGLDRAWARRAYSPROC)(unsigned int mode, int first, int count);
-static PFNGLDRAWARRAYSPROC glDrawArrays;
-
-typedef void (*PFNGLUSEPROGRAMPROC)(unsigned int program);
-static PFNGLUSEPROGRAMPROC glUseProgram;
-
-typedef void (*PFNGLGENVERTEXARRAYSPROC)(int n, unsigned int *arrays);
-static PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
-
-typedef void (*PFNGLBINDVERTEXARRAYPROC)(unsigned int array);
-static PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-
-typedef int (*PFNGLGETUNIFORMLOCATIONPROC)(unsigned int program, char *name);
-static PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
-
-typedef void (*PFNGLUNIFORM1FPROC)(int location, float v0);
-static PFNGLUNIFORM1FPROC glUniform1f;
-
-typedef void (*PFNGLUNIFORM1IPROC)(int location, int v0);
-static PFNGLUNIFORM1IPROC glUniform1i;
-
-typedef void (*PFNGLUNIFORM3FPROC)(int location, float v0, float v1, float v2);
-static PFNGLUNIFORM3FPROC glUniform3f;
-
 SHADE_IT_API void win32_print(char *str)
 {
   static unsigned long written;
@@ -553,7 +568,7 @@ SHADE_IT_API void win32_print(char *str)
   }
 }
 
-SHADE_IT_API unsigned char *win32_read_file(char *filename, unsigned int *file_size_out)
+SHADE_IT_API unsigned char *win32_file_read(char *filename, unsigned int *file_size_out)
 {
   void *hFile = INVALID_HANDLE;
   unsigned long fileSize = 0;
@@ -595,7 +610,6 @@ SHADE_IT_API unsigned char *win32_read_file(char *filename, unsigned int *file_s
     return (void *)0;
   }
 
-  /* Small file: read normally */
   buffer = (unsigned char *)VirtualAlloc((void *)0, fileSize + 1, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
   if (!buffer)
@@ -611,7 +625,7 @@ SHADE_IT_API unsigned char *win32_read_file(char *filename, unsigned int *file_s
     return (void *)0;
   }
 
-  buffer[fileSize] = '\0'; /* Null-terminate */
+  buffer[fileSize] = '\0';
 
   *file_size_out = fileSize;
   CloseHandle(hFile);
@@ -683,7 +697,6 @@ SHADE_IT_API int opengl_shader_compile(
 
   glShaderSource(shaderId, 1, &shaderCode, (void *)0);
   glCompileShader(shaderId);
-
   glGetShaderiv(shaderId, GL_COMPILE_STATUS, &success);
 
   if (!success)
@@ -777,7 +790,7 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
       "}\n";
 
   unsigned int size = 0;
-  unsigned char *src = win32_read_file(shader_file_name, &size);
+  unsigned char *src = win32_file_read(shader_file_name, &size);
 
   if (src && size > 0)
   {
@@ -819,8 +832,8 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 {
   char *fragment_shader_file_name = "shade_it.fs";
 
-  shader main_shader = {0};
   win32_shade_it_state state = {0};
+  shader main_shader = {0};
 
   if (argv && argc > 1)
   {
@@ -869,7 +882,6 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
     int pixelFormatID;
     unsigned int numFormats;
-    int status;
 
     int contextAttribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
@@ -879,10 +891,6 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         0};
 
     void *rc;
-
-    PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
-    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
-    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 
     windowClass.style = CS_OWNDC;
     windowClass.lpfnWndProc = win32_shade_it_window_callback;
@@ -966,11 +974,12 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 #endif
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-function-type"
+    /* Core WGL functions */
     wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
     wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
 
-    /* OpenGL Shaders */
+    /* OpenGL functions that are not part of the opengl32 lib */
     glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
     glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
     glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
@@ -994,9 +1003,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
 #pragma GCC diagnostic pop
 
-    status = wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats);
-
-    if (!status || !numFormats)
+    if (!wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
     {
       return 1;
     }
@@ -1087,6 +1094,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     QueryPerformanceFrequency(&perf_freq);
     QueryPerformanceCounter(&time_start);
     QueryPerformanceCounter(&time_start_fps_cap);
+
     time_last = time_start;
 
     while (state.running)
@@ -1125,6 +1133,9 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
           /* TODO: check failures */
           opengl_shader_load(&main_shader, fragment_shader_file_name);
           fs_last = fs_now;
+
+          /* Reset iTime elapsed seconds on hot reload */
+          QueryPerformanceCounter(&time_start);
         }
       }
 
@@ -1162,10 +1173,11 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
       SwapBuffers(state.dc);
 
       /******************************/
-      /* Cap FPS to 60 Hz           */
+      /* Frame Rate Limiting        */
       /******************************/
       {
         LARGE_INTEGER time_end;
+
         double frame_time;
         double remaining;
         double target_frame_time = 1.0 / 60.0;
