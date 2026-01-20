@@ -492,6 +492,11 @@ typedef struct win32_shade_it_state
   float window_clear_color_r;
   float window_clear_color_a;
 
+  int iFrame;        /* Frames processed count               */
+  double iTime;      /* Total elapsed time in seconds        */
+  double iTimeDelta; /* Current render frame time in seconds */
+  double iFrameRate; /* Frame Rate per second                */
+
   unsigned char running;
 
   void *window_handle;
@@ -665,7 +670,7 @@ SHADE_IT_API int win32_parse_command_line(unsigned char *cmdline, unsigned char 
       break;
     }
 
-    if (argc < 63)
+    if (argc < 9)
     {
       argv_local[argc++] = cmdline;
     }
@@ -830,6 +835,7 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
 
 SHADE_IT_API int start(int argc, unsigned char **argv)
 {
+  /* Default fragment shader file name to load if no file is passed as an argument in cli */
   char *fragment_shader_file_name = "shade_it.fs";
 
   win32_shade_it_state state = {0};
@@ -880,17 +886,12 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         WGL_STENCIL_BITS_ARB, 8,
         0};
 
-    int pixelFormatID;
-    unsigned int numFormats;
-
     int contextAttribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
         WGL_CONTEXT_MINOR_VERSION_ARB, 3,
         WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         0};
-
-    void *rc;
 
     windowClass.style = CS_OWNDC;
     windowClass.lpfnWndProc = win32_shade_it_window_callback;
@@ -1003,29 +1004,37 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
 #pragma GCC diagnostic pop
 
-    if (!wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
+    /* Set Pixel Format */
     {
-      return 1;
+      int pixelFormatID;
+      unsigned int numFormats;
+
+      if (!wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
+      {
+        return 1;
+      }
+
+      SetPixelFormat(state.dc, pixelFormatID, 0);
     }
 
-    SetPixelFormat(state.dc, pixelFormatID, 0);
-
-    /* Open GL 3.3 specification */
-    rc = wglCreateContextAttribsARB(state.dc, 0, contextAttribs);
-
-    if (!rc)
+    /* Create the OpenGL context */
     {
-      return 1;
-    }
+      void *rc = wglCreateContextAttribsARB(state.dc, 0, contextAttribs);
 
-    wglMakeCurrent(0, 0);
-    wglDeleteContext(fakeRC);
-    ReleaseDC(fakeWND, fakeDC);
-    DestroyWindow(fakeWND);
+      if (!rc)
+      {
+        return 1;
+      }
 
-    if (!wglMakeCurrent(state.dc, rc))
-    {
-      return 1;
+      wglMakeCurrent(0, 0);
+      wglDeleteContext(fakeRC);
+      ReleaseDC(fakeWND, fakeDC);
+      DestroyWindow(fakeWND);
+
+      if (!wglMakeCurrent(state.dc, rc))
+      {
+        return 1;
+      }
     }
 
     /* Disable VSync */
@@ -1041,36 +1050,19 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
     /* Make the window visible */
     ShowWindow(state.window_handle, SW_SHOW);
-  }
 
-  /******************************/
-  /* OpenGL Preparation         */
-  /******************************/
-  glDisable(GL_MULTISAMPLE);
-  glViewport(0, 0, (int)state.window_width, (int)state.window_height);
+    glDisable(GL_MULTISAMPLE);
+    glViewport(0, 0, (int)state.window_width, (int)state.window_height);
 
-  {
     /* Generate a dummy vao with no buffer */
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    {
+      unsigned int vao;
+      glGenVertexArrays(1, &vao);
+      glBindVertexArray(vao);
 
-    /* TODO: check failures */
-    opengl_shader_load(&main_shader, fragment_shader_file_name);
-  }
-
-  {
-    LARGE_INTEGER perf_freq;
-    LARGE_INTEGER time_start;
-    LARGE_INTEGER time_start_fps_cap;
-    LARGE_INTEGER time_last;
-
-    int iFrame = 0;
-    double iTime = 0.0;
-    double iTimeDelta = 0.0;
-    double iFrameRate = 0.0;
-
-    FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
+      /* TODO: check failures */
+      opengl_shader_load(&main_shader, fragment_shader_file_name);
+    }
 
     /* Print opengl information */
     {
@@ -1090,6 +1082,15 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
       win32_print(version);
       win32_print("\n");
     }
+  }
+
+  {
+    LARGE_INTEGER perf_freq;
+    LARGE_INTEGER time_start;
+    LARGE_INTEGER time_start_fps_cap;
+    LARGE_INTEGER time_last;
+
+    FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
 
     QueryPerformanceFrequency(&perf_freq);
     QueryPerformanceCounter(&time_start);
@@ -1106,19 +1107,14 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         LARGE_INTEGER time_now;
         QueryPerformanceCounter(&time_now);
 
-        iTimeDelta =
-            (double)(time_now.QuadPart - time_last.QuadPart) /
-            (double)perf_freq.QuadPart;
-
-        iTime =
-            (double)(time_now.QuadPart - time_start.QuadPart) /
-            (double)perf_freq.QuadPart;
+        state.iTimeDelta = (double)(time_now.QuadPart - time_last.QuadPart) / (double)perf_freq.QuadPart;
+        state.iTime = (double)(time_now.QuadPart - time_start.QuadPart) / (double)perf_freq.QuadPart;
 
         time_last = time_now;
 
-        if (iTimeDelta > 0.0)
+        if (state.iTimeDelta > 0.0)
         {
-          iFrameRate = 1.0 / iTimeDelta;
+          state.iFrameRate = 1.0 / state.iTimeDelta;
         }
       }
 
@@ -1165,10 +1161,10 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
       /******************************/
       glClear(GL_COLOR_BUFFER_BIT);
       glUniform3f(main_shader.loc_iResolution, (float)state.window_width, (float)state.window_height, 1.0f);
-      glUniform1f(main_shader.loc_iTime, (float)iTime);
-      glUniform1f(main_shader.loc_iTimeDelta, (float)iTimeDelta);
-      glUniform1i(main_shader.loc_iFrame, iFrame);
-      glUniform1f(main_shader.loc_iFrameRate, (float)iFrameRate);
+      glUniform1f(main_shader.loc_iTime, (float)state.iTime);
+      glUniform1f(main_shader.loc_iTimeDelta, (float)state.iTimeDelta);
+      glUniform1i(main_shader.loc_iFrame, state.iFrame);
+      glUniform1f(main_shader.loc_iFrameRate, (float)state.iFrameRate);
       glDrawArrays(GL_TRIANGLES, 0, 3);
       SwapBuffers(state.dc);
 
@@ -1184,9 +1180,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
         QueryPerformanceCounter(&time_end);
 
-        frame_time =
-            (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) /
-            (double)perf_freq.QuadPart;
+        frame_time = (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (double)perf_freq.QuadPart;
 
         remaining = target_frame_time - frame_time;
 
@@ -1207,9 +1201,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
           {
             QueryPerformanceCounter(&time_end);
 
-            frame_time =
-                (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) /
-                (double)perf_freq.QuadPart;
+            frame_time = (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (double)perf_freq.QuadPart;
 
             if (frame_time >= target_frame_time)
             {
@@ -1222,7 +1214,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         time_start_fps_cap = time_end;
       }
 
-      iFrame++;
+      state.iFrame++;
     }
   }
 
