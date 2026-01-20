@@ -398,7 +398,7 @@ typedef int (*PFNWGLSWAPINTERVALEXTPROC)(int interval);
  * # Main Code
  * #############################################################################
  */
-typedef struct shade_it_state
+typedef struct win32_shade_it_state
 {
 
   unsigned int window_width;
@@ -411,11 +411,14 @@ typedef struct shade_it_state
 
   unsigned char running;
 
-} shade_it_state;
+  void *window_handle;
+  void *dc;
+
+} win32_shade_it_state;
 
 SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_shade_it_window_callback(void *window, unsigned int message, UINT_PTR wParam, LONG_PTR lParam)
 {
-  shade_it_state *state = (shade_it_state *)GetWindowLongPtrA(window, GWLP_USERDATA);
+  win32_shade_it_state *state = (win32_shade_it_state *)GetWindowLongPtrA(window, GWLP_USERDATA);
 
   LONG_PTR result = 0;
 
@@ -426,7 +429,7 @@ SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_shade_it_window_c
   case WM_CREATE:
   {
     CREATESTRUCTA *cs = (CREATESTRUCTA *)lParam;
-    state = (shade_it_state *)cs->lpCreateParams;
+    state = (win32_shade_it_state *)cs->lpCreateParams;
     SetWindowLongPtrA(window, GWLP_USERDATA, (LONG_PTR)state);
   }
   break;
@@ -814,13 +817,10 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
 
 SHADE_IT_API int start(int argc, unsigned char **argv)
 {
-  void *window_handle = (void *)0;
-  void *dc = (void *)0;
-
   char *fragment_shader_file_name = "shade_it.fs";
 
   shader main_shader = {0};
-  shade_it_state state = {0};
+  win32_shade_it_state state = {0};
 
   if (argv && argc > 1)
   {
@@ -835,6 +835,8 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
+  state.window_handle = (void *)0;
+  state.dc = (void *)0;
 
   /******************************/
   /* Window and OpenGL context  */
@@ -942,7 +944,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     state.window_width = (unsigned int)(rect.right - rect.left);
     state.window_height = (unsigned int)(rect.bottom - rect.top);
 
-    window_handle = CreateWindowExA(
+    state.window_handle = CreateWindowExA(
         0,
         windowClass.lpszClassName,
         windowClass.lpszClassName,
@@ -955,9 +957,9 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     );
 
     /* Modal window */
-    SetWindowPos(window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    SetWindowPos(state.window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
-    dc = GetDC(window_handle);
+    state.dc = GetDC(state.window_handle);
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4068)
@@ -1004,17 +1006,17 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
 #pragma GCC diagnostic pop
 
-    status = wglChoosePixelFormatARB(dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats);
+    status = wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats);
 
     if (!status || !numFormats)
     {
       return 1;
     }
 
-    SetPixelFormat(dc, pixelFormatID, 0);
+    SetPixelFormat(state.dc, pixelFormatID, 0);
 
     /* Open GL 3.3 specification */
-    rc = wglCreateContextAttribsARB(dc, 0, contextAttribs);
+    rc = wglCreateContextAttribsARB(state.dc, 0, contextAttribs);
 
     if (!rc)
     {
@@ -1026,7 +1028,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     ReleaseDC(fakeWND, fakeDC);
     DestroyWindow(fakeWND);
 
-    if (!wglMakeCurrent(dc, rc))
+    if (!wglMakeCurrent(state.dc, rc))
     {
       return 1;
     }
@@ -1040,10 +1042,10 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     /* Avoid clear color flickering */
     glClearColor(state.window_clear_color_r, state.window_clear_color_g, state.window_clear_color_b, state.window_clear_color_a);
     glClear(GL_COLOR_BUFFER_BIT);
-    SwapBuffers(dc);
+    SwapBuffers(state.dc);
 
     /* Make the window visible */
-    ShowWindow(window_handle, SW_SHOW);
+    ShowWindow(state.window_handle, SW_SHOW);
   }
 
   /******************************/
@@ -1169,7 +1171,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
       glUniform1i(main_shader.loc_iFrame, iFrame);
       glUniform1f(main_shader.loc_iFrameRate, (float)iFrameRate);
       glDrawArrays(GL_TRIANGLES, 0, 3);
-      SwapBuffers(dc);
+      SwapBuffers(state.dc);
 
       /******************************/
       /* Cap FPS to 60 Hz           */
