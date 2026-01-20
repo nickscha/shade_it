@@ -481,75 +481,6 @@ static PFNGLUNIFORM3FPROC glUniform3f;
  * # Main Code
  * #############################################################################
  */
-typedef struct win32_shade_it_state
-{
-
-  unsigned int window_width;
-  unsigned int window_height;
-
-  float window_clear_color_g;
-  float window_clear_color_b;
-  float window_clear_color_r;
-  float window_clear_color_a;
-
-  int iFrame;        /* Frames processed count               */
-  double iTime;      /* Total elapsed time in seconds        */
-  double iTimeDelta; /* Current render frame time in seconds */
-  double iFrameRate; /* Frame Rate per second                */
-
-  unsigned char running;
-
-  void *window_handle;
-  void *dc;
-
-} win32_shade_it_state;
-
-SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_shade_it_window_callback(void *window, unsigned int message, UINT_PTR wParam, LONG_PTR lParam)
-{
-  win32_shade_it_state *state = (win32_shade_it_state *)GetWindowLongPtrA(window, GWLP_USERDATA);
-
-  LONG_PTR result = 0;
-
-  switch (message)
-  {
-  case WM_ERASEBKGND:
-    return 1;
-  case WM_CREATE:
-  {
-    CREATESTRUCTA *cs = (CREATESTRUCTA *)lParam;
-    state = (win32_shade_it_state *)cs->lpCreateParams;
-    SetWindowLongPtrA(window, GWLP_USERDATA, (LONG_PTR)state);
-  }
-  break;
-  case WM_CLOSE:
-  {
-    if (state)
-    {
-      state->running = 0;
-    }
-  }
-  break;
-  case WM_SIZE:
-  {
-    if (state)
-    {
-      state->window_width = (unsigned int)LOWORD(lParam);
-      state->window_height = (unsigned int)HIWORD(lParam);
-
-      glViewport(0, 0, (int)state->window_width, (int)state->window_height);
-    }
-  }
-  break;
-  default:
-  {
-    result = DefWindowProcA(window, message, wParam, lParam);
-  }
-  break;
-  }
-
-  return (result);
-}
-
 SHADE_IT_API void win32_print(char *str)
 {
   static unsigned long written;
@@ -691,6 +622,75 @@ SHADE_IT_API int win32_parse_command_line(unsigned char *cmdline, unsigned char 
   *argv_out = argv_local;
 
   return argc;
+}
+
+typedef struct win32_shade_it_state
+{
+
+  unsigned int window_width;
+  unsigned int window_height;
+
+  float window_clear_color_g;
+  float window_clear_color_b;
+  float window_clear_color_r;
+  float window_clear_color_a;
+
+  int iFrame;        /* Frames processed count               */
+  double iTime;      /* Total elapsed time in seconds        */
+  double iTimeDelta; /* Current render frame time in seconds */
+  double iFrameRate; /* Frame Rate per second                */
+
+  unsigned char running;
+
+  void *window_handle;
+  void *dc;
+
+} win32_shade_it_state;
+
+SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_window_callback(void *window, unsigned int message, UINT_PTR wParam, LONG_PTR lParam)
+{
+  win32_shade_it_state *state = (win32_shade_it_state *)GetWindowLongPtrA(window, GWLP_USERDATA);
+
+  LONG_PTR result = 0;
+
+  switch (message)
+  {
+  case WM_ERASEBKGND:
+    return 1;
+  case WM_CREATE:
+  {
+    CREATESTRUCTA *cs = (CREATESTRUCTA *)lParam;
+    state = (win32_shade_it_state *)cs->lpCreateParams;
+    SetWindowLongPtrA(window, GWLP_USERDATA, (LONG_PTR)state);
+  }
+  break;
+  case WM_CLOSE:
+  {
+    if (state)
+    {
+      state->running = 0;
+    }
+  }
+  break;
+  case WM_SIZE:
+  {
+    if (state)
+    {
+      state->window_width = (unsigned int)LOWORD(lParam);
+      state->window_height = (unsigned int)HIWORD(lParam);
+
+      glViewport(0, 0, (int)state->window_width, (int)state->window_height);
+    }
+  }
+  break;
+  default:
+  {
+    result = DefWindowProcA(window, message, wParam, lParam);
+  }
+  break;
+  }
+
+  return (result);
 }
 
 SHADE_IT_API int opengl_shader_compile(
@@ -894,7 +894,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         0};
 
     windowClass.style = CS_OWNDC;
-    windowClass.lpfnWndProc = win32_shade_it_window_callback;
+    windowClass.lpfnWndProc = win32_window_callback;
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
     windowClass.hbrBackground = 0;
