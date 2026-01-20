@@ -403,6 +403,12 @@ typedef struct shade_it_state
 
   unsigned int window_width;
   unsigned int window_height;
+
+  float window_clear_color_g;
+  float window_clear_color_b;
+  float window_clear_color_r;
+  float window_clear_color_a;
+
   unsigned char running;
 
 } shade_it_state;
@@ -828,6 +834,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
   state.running = 1;
   state.window_width = 800;
   state.window_height = 600;
+  state.window_clear_color_r = 0.5f;
 
   /******************************/
   /* Window and OpenGL context  */
@@ -1031,7 +1038,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     }
 
     /* Avoid clear color flickering */
-    glClearColor(0.5f, 0.0f, 0.0f, 0.0f);
+    glClearColor(state.window_clear_color_r, state.window_clear_color_g, state.window_clear_color_b, state.window_clear_color_a);
     glClear(GL_COLOR_BUFFER_BIT);
     SwapBuffers(dc);
 
