@@ -967,19 +967,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-function-type"
     wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-
-    if (!wglChoosePixelFormatARB)
-    {
-      return 1;
-    }
-
     wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-
-    if (!wglCreateContextAttribsARB)
-    {
-      return 1;
-    }
-
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
 
     /* OpenGL Shaders */
