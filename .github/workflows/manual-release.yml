@@ -22,6 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Compile win32_shade_it
+        shell: bash
         run: |
           gcc -s -O2 -mconsole -march=native -mtune=native ^
             -std=c89 -pedantic -nodefaultlibs -nostdlib ^
