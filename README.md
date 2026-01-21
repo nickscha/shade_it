@@ -32,14 +32,27 @@ A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL S
 - **Strict compilation** — built with aggressive warnings & safety checks  
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 
-## Quick Start (User)
+## Quick Start
 
-Download the latest Windows executable from the **Actions → Artifacts** page:
-- https://github.com/nickscha/shade_it/actions
+### Windows (Prebuilt)
 
-Extract the archive and run `win32_shade_it.exe`.  
+Download the latest Windows executable from the **Latest Release**:
+- https://github.com/nickscha/shade_it/releases/latest
 
-You can run the program like this:
+### From Source
+
+Clone the repository and build manually.
+Either GCC or Clang is required to run the build script.
+
+```bash
+git clone https://github.com/nickscha/shade_it.git
+cd shade_it
+win32_shade_it_build.bat
+```
+
+You can now run the `win32_shade_it.exe` program.
+
+### Running the program
 
 ```bat
 REM This expects a file named "shade_it.fs" to be present
@@ -80,10 +93,6 @@ void main()
 ```
 
 Under the **examples** folder you can find different kinds of fragment shaders for inspiration that you can run directly.
-
-## Quick Start (Developers)
-
-Building this single source file program can be done by calling the `win32_shade_it_build.bat` script.
 
 ## "nostdlib" Motivation & Purpose
 
