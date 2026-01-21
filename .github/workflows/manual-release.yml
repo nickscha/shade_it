@@ -21,6 +21,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Compile win32_shade_it
+        run: |
+          gcc -s -O2 -mconsole -march=native -mtune=native ^
+            -std=c89 -pedantic -nodefaultlibs -nostdlib ^
+            -mno-stack-arg-probe ^
+            -Xlinker /STACK:0x100000,0x100000 ^
+            -Xlinker /ENTRY:mainCRTStartup ^
+            -fno-builtin -ffreestanding ^
+            -fno-asynchronous-unwind-tables ^
+            -fuse-ld=lld ^
+            -Wall -Wextra -Werror -Wvla -Wconversion ^
+            -Wdouble-promotion -Wmissing-field-initializers ^
+            -Wuninitialized -Winit-self -Wunused ^
+            -Wunused-macros -Wunused-local-typedefs ^
+            win32_shade_it.c -o win32_shade_it.exe ^
+            -lkernel32 -luser32 -lgdi32 -lopengl32
+
       - name: Get latest release tag
         id: get_tag
         run: |
@@ -65,6 +82,12 @@ jobs:
 
             ---
 
+
+            ## Downloads
+            - **win32_shade_it.exe** (Windows, OpenGL 3.3)
+
+            ---
+
             ### What's Included
 
             This release includes the `win32_shade_it.c` source file as well as testing and example codes ready to be used.
@@ -73,3 +96,13 @@ jobs:
 
           draft: false
           prerelease: false
+
+      - name: Upload executable to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: win32_shade_it.exe
+          asset_name: win32_shade_it.exe
+          asset_content_type: application/octet-stream
