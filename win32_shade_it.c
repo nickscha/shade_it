@@ -1,4 +1,4 @@
-/* shade_it.h - v0.3 - public domain data structures - nickscha 2026
+/* win32_shade_it.c - v0.3 - public domain data structures - nickscha 2026
 
 A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
 
@@ -10,17 +10,28 @@ LICENSE
 */
 
 /* #############################################################################
- * # COMPILER SETTINGS
+ * # TYPES & COMPILER SETTINGS
  * #############################################################################
  */
 #if __STDC_VERSION__ >= 199901L
 #define SHADE_IT_INLINE inline
+typedef long long LONG_PTR;
+typedef unsigned long long UINT_PTR;
 #elif defined(__GNUC__) || defined(__clang__)
 #define SHADE_IT_INLINE __inline__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlong-long"
+typedef long long LONG_PTR;
+typedef unsigned long long UINT_PTR;
+#pragma GCC diagnostic pop
 #elif defined(_MSC_VER)
 #define SHADE_IT_INLINE __inline
+typedef __int64 LONG_PTR;
+typedef unsigned __int64 UINT_PTR;
 #else
 #define SHADE_IT_INLINE
+typedef long LONG_PTR;
+typedef unsigned long UINT_PTR;
 #endif
 
 #define SHADE_IT_API static
@@ -85,28 +96,6 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD For
 #define PFD_SUPPORT_OPENGL 0x00000020
 #define PFD_DRAW_TO_WINDOW 0x00000004
 #define PFD_TYPE_RGBA 0
-
-#if defined(_WIN64)
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wlong-long"
-typedef long long LONG_PTR;
-typedef unsigned long long UINT_PTR;
-#pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-typedef __int64 LONG_PTR;
-typedef unsigned __int64 UINT_PTR;
-#else
-#error "Unsupported compiler"
-#endif
-
-#else
-
-typedef long LONG_PTR;
-typedef unsigned long UINT_PTR;
-
-#endif
 
 #define LOWORD(l) ((unsigned short)(((UINT_PTR)(l)) & 0xffff))
 #define HIWORD(l) ((unsigned short)((((UINT_PTR)(l)) >> 16) & 0xffff))
