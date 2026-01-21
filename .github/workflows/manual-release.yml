@@ -1,4 +1,4 @@
-name: Manual Release of shade_it.h with Changelog
+name: Manual Release of win32_shade_it.c with Changelog
 
 on:
   workflow_dispatch:
@@ -51,7 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.event.inputs.version }}
-          release_name: "${{ github.event.inputs.version }}: shade_it.h release"
+          release_name: "${{ github.event.inputs.version }}: win32_shade_it.c release"
           body: |
             # ${{ github.event.inputs.version }}: shade_it - OpenGL Shader Playground Release.
 
@@ -67,7 +67,7 @@ jobs:
 
             ### What's Included
 
-            This release includes the `shade_it.h` header file as well as testing and example codes ready to be used.
+            This release includes the `win32_shade_it.c` source file as well as testing and example codes ready to be used.
 
             **Get started by downloading the source code today!**
 
