@@ -15,33 +15,52 @@ LICENSE
  */
 #if __STDC_VERSION__ >= 199901L
 #define SHADE_IT_INLINE inline
-typedef long long LONG_PTR;
-typedef unsigned long long UINT_PTR;
+typedef long long i64;
+typedef unsigned long long u64;
 #elif defined(__GNUC__) || defined(__clang__)
 #define SHADE_IT_INLINE __inline__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wlong-long"
-typedef long long LONG_PTR;
-typedef unsigned long long UINT_PTR;
+typedef long long i64;
+typedef unsigned long long u64;
 #pragma GCC diagnostic pop
 #elif defined(_MSC_VER)
 #define SHADE_IT_INLINE __inline
-typedef __int64 LONG_PTR;
-typedef unsigned __int64 UINT_PTR;
+typedef __int64 i64;
+typedef unsigned __int64 u64;
 #else
 #define SHADE_IT_INLINE
-typedef long LONG_PTR;
-typedef unsigned long UINT_PTR;
+typedef long i64;
+typedef unsigned long u64;
 #endif
 
 #define SHADE_IT_API static
+
+typedef char s8;
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+typedef int i32;
+typedef float f32;
+typedef double f64;
+
+#define TYPES_STATIC_ASSERT(c, m) typedef char types_assert_##m[(c) ? 1 : -1]
+TYPES_STATIC_ASSERT(sizeof(s8) == 1, s8_size_must_be_1);
+TYPES_STATIC_ASSERT(sizeof(u8) == 1, u8_size_must_be_1);
+TYPES_STATIC_ASSERT(sizeof(u16) == 2, u16_size_must_be_2);
+TYPES_STATIC_ASSERT(sizeof(u32) == 4, u32_size_must_be_4);
+TYPES_STATIC_ASSERT(sizeof(i32) == 4, i32_size_must_be_4);
+TYPES_STATIC_ASSERT(sizeof(f32) == 4, f32_size_must_be_4);
+TYPES_STATIC_ASSERT(sizeof(f64) == 8, f64_size_must_be_8);
+TYPES_STATIC_ASSERT(sizeof(u64) == 8, u64_size_must_be_8);
+TYPES_STATIC_ASSERT(sizeof(i64) == 8, i64_size_must_be_8);
 
 /* #############################################################################
  * # Force Discrete GPU
  * #############################################################################
  */
-__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001; /* NVIDIA Force discrete GPU */
-__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD Force discrete GPU    */
+__declspec(dllexport) u32 NvOptimusEnablement = 0x00000001;         /* NVIDIA Force discrete GPU */
+__declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force discrete GPU    */
 
 /* #############################################################################
  * # Win32 "windows.h" subsitution for fast builds
@@ -50,8 +69,8 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD For
 #define WIN32_API(r) __declspec(dllimport) r __stdcall
 #define WIN32_API_CALLBACK __stdcall
 
-#define STD_OUTPUT_HANDLE ((unsigned long)-11)
-#define INVALID_FILE_SIZE ((unsigned long)0xFFFFFFFF)
+#define STD_OUTPUT_HANDLE ((u32) - 11)
+#define INVALID_FILE_SIZE ((u32)0xFFFFFFFF)
 #define INVALID_HANDLE ((void *)-1)
 #define GENERIC_READ (0x80000000L)
 #define FILE_SHARE_READ 0x00000001
@@ -97,13 +116,13 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;   /* AMD For
 #define PFD_DRAW_TO_WINDOW 0x00000004
 #define PFD_TYPE_RGBA 0
 
-#define LOWORD(l) ((unsigned short)(((UINT_PTR)(l)) & 0xffff))
-#define HIWORD(l) ((unsigned short)((((UINT_PTR)(l)) >> 16) & 0xffff))
-#define MAKEINTRESOURCEA(i) ((char *)((unsigned long)((unsigned short)(i))))
+#define LOWORD(l) ((u16)(((u64)(l)) & 0xffff))
+#define HIWORD(l) ((u16)((((u64)(l)) >> 16) & 0xffff))
+#define MAKEINTRESOURCEA(i) ((s8 *)((u32)((u16)(i))))
 #define IDC_ARROW MAKEINTRESOURCEA(32512)
 
 typedef void *(*PROC)(void);
-typedef LONG_PTR(WIN32_API_CALLBACK *WNDPROC)(void *, unsigned int, UINT_PTR, LONG_PTR);
+typedef i64(WIN32_API_CALLBACK *WNDPROC)(void *, u32, u64, i64);
 
 typedef struct tagCREATESTRUCTA
 {
@@ -111,105 +130,105 @@ typedef struct tagCREATESTRUCTA
   void *hInstance;
   void *hMenu;
   void *hwndParent;
-  int cy;
-  int cx;
-  int y;
-  int x;
-  long style;
-  char *lpszName;
-  char *lpszClass;
-  unsigned long dwExStyle;
+  i32 cy;
+  i32 cx;
+  i32 y;
+  i32 x;
+  i32 style;
+  s8 *lpszName;
+  s8 *lpszClass;
+  u32 dwExStyle;
 } CREATESTRUCTA, *LPCREATESTRUCTA;
 
 typedef struct WNDCLASSA
 {
-  unsigned int style;
+  u32 style;
   WNDPROC lpfnWndProc;
-  int cbClsExtra;
-  int cbWndExtra;
+  i32 cbClsExtra;
+  i32 cbWndExtra;
   void *hInstance;
   void *hIcon;
   void *hCursor;
   void *hbrBackground;
-  char *lpszMenuName;
-  char *lpszClassName;
+  s8 *lpszMenuName;
+  s8 *lpszClassName;
 } WNDCLASSA;
 
 typedef struct tagPOINT
 {
-  long x;
-  long y;
+  i32 x;
+  i32 y;
 } POINT;
 
 typedef struct tagRECT
 {
-  long left;
-  long top;
-  long right;
-  long bottom;
+  i32 left;
+  i32 top;
+  i32 right;
+  i32 bottom;
 } RECT, *PRECT, *LPRECT;
 
 typedef struct tagMSG
 {
   void *hwnd;
-  unsigned int message;
-  UINT_PTR wParam;
-  LONG_PTR lParam;
-  unsigned long time;
+  u32 message;
+  u64 wParam;
+  i64 lParam;
+  u32 time;
   POINT pt;
-  unsigned long lPrivate;
+  u32 lPrivate;
 } MSG, *LPMSG;
 
 typedef struct tagPIXELFORMATDESCRIPTOR
 {
-  unsigned short nSize;
-  unsigned short nVersion;
-  unsigned long dwFlags;
-  unsigned char iPixelType;
-  unsigned char cColorBits;
-  unsigned char cRedBits;
-  unsigned char cRedShift;
-  unsigned char cGreenBits;
-  unsigned char cGreenShift;
-  unsigned char cBlueBits;
-  unsigned char cBlueShift;
-  unsigned char cAlphaBits;
-  unsigned char cAlphaShift;
-  unsigned char cAccumBits;
-  unsigned char cAccumRedBits;
-  unsigned char cAccumGreenBits;
-  unsigned char cAccumBlueBits;
-  unsigned char cAccumAlphaBits;
-  unsigned char cDepthBits;
-  unsigned char cStencilBits;
-  unsigned char cAuxBuffers;
-  unsigned char iLayerType;
-  unsigned char bReserved;
-  unsigned long dwLayerMask;
-  unsigned long dwVisibleMask;
-  unsigned long dwDamageMask;
+  u16 nSize;
+  u16 nVersion;
+  u32 dwFlags;
+  u8 iPixelType;
+  u8 cColorBits;
+  u8 cRedBits;
+  u8 cRedShift;
+  u8 cGreenBits;
+  u8 cGreenShift;
+  u8 cBlueBits;
+  u8 cBlueShift;
+  u8 cAlphaBits;
+  u8 cAlphaShift;
+  u8 cAccumBits;
+  u8 cAccumRedBits;
+  u8 cAccumGreenBits;
+  u8 cAccumBlueBits;
+  u8 cAccumAlphaBits;
+  u8 cDepthBits;
+  u8 cStencilBits;
+  u8 cAuxBuffers;
+  u8 iLayerType;
+  u8 bReserved;
+  u32 dwLayerMask;
+  u32 dwVisibleMask;
+  u32 dwDamageMask;
 } PIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
 
 typedef struct LARGE_INTEGER
 {
-  LONG_PTR QuadPart;
+  i64 QuadPart;
 
 } LARGE_INTEGER;
 
 typedef struct FILETIME
 {
-  unsigned long dwLowDateTime;
-  unsigned long dwHighDateTime;
+  u32 dwLowDateTime;
+  u32 dwHighDateTime;
 } FILETIME;
 
 typedef struct WIN32_FILE_ATTRIBUTE_DATA
 {
-  unsigned long dwFileAttributes;
+  u32 dwFileAttributes;
   FILETIME ftCreationTime;
   FILETIME ftLastAccessTime;
   FILETIME ftLastWriteTime;
-  unsigned long nFileSizeHigh;
-  unsigned long nFileSizeLow;
+  u32 nFileSizeHigh;
+  u32 nFileSizeLow;
 } WIN32_FILE_ATTRIBUTE_DATA;
 
 typedef enum GET_FILEEX_INFO_LEVELS
@@ -219,108 +238,108 @@ typedef enum GET_FILEEX_INFO_LEVELS
 } GET_FILEEX_INFO_LEVELS;
 
 WIN32_API(void *)
-GetStdHandle(unsigned long nStdHandle);
+GetStdHandle(u32 nStdHandle);
 
-WIN32_API(int)
+WIN32_API(i32)
 CloseHandle(void *hObject);
 
 WIN32_API(void *)
-VirtualAlloc(void *lpAddress, unsigned int dwSize, unsigned long flAllocationType, unsigned long flProtect);
+VirtualAlloc(void *lpAddress, u32 dwSize, u32 flAllocationType, u32 flProtect);
 
-WIN32_API(int)
-VirtualFree(void *lpAddress, unsigned int dwSize, unsigned long dwFreeType);
+WIN32_API(i32)
+VirtualFree(void *lpAddress, u32 dwSize, u32 dwFreeType);
 
 WIN32_API(void *)
-CreateFileA(char *lpFileName, unsigned long dwDesiredAccess, unsigned long dwShareMode, void *, unsigned long dwCreationDisposition, unsigned long dwFlagsAndAttributes, void *hTemplateFile);
+CreateFileA(s8 *lpFileName, u32 dwDesiredAccess, u32 dwShareMode, void *, u32 dwCreationDisposition, u32 dwFlagsAndAttributes, void *hTemplateFile);
 
-WIN32_API(unsigned long)
-GetFileSize(void *hFile, unsigned long *lpFileSizeHigh);
+WIN32_API(u32)
+GetFileSize(void *hFile, u32 *lpFileSizeHigh);
 
-WIN32_API(int)
-ReadFile(void *hFile, void *lpBuffer, unsigned long nNumberOfBytesToRead, unsigned long *lpNumberOfBytesRead, void *lpOverlapped);
+WIN32_API(i32)
+ReadFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToRead, u32 *lpNumberOfBytesRead, void *lpOverlapped);
 
-WIN32_API(int)
-WriteFile(void *hFile, void *lpBuffer, unsigned long nNumberOfBytesToWrite, unsigned long *lpNumberOfBytesWritten, void *lpOverlapped);
+WIN32_API(i32)
+WriteFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToWrite, u32 *lpNumberOfBytesWritten, void *lpOverlapped);
 
-WIN32_API(long)
+WIN32_API(i32)
 CompareFileTime(FILETIME *lpFileTime1, FILETIME *lpFileTime2);
 
-WIN32_API(int)
-GetFileAttributesExA(char *lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, void *lpFileInformation);
+WIN32_API(i32)
+GetFileAttributesExA(s8 *lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, void *lpFileInformation);
 
 WIN32_API(void)
-Sleep(unsigned long dwMilliseconds);
+Sleep(u32 dwMilliseconds);
 
 WIN32_API(void)
-ExitProcess(unsigned int uExitCode);
+ExitProcess(u32 uExitCode);
 
-WIN32_API(int)
-PeekMessageA(LPMSG lpMsg, void *hWnd, unsigned int wMsgFilterMin, unsigned int wMsgFilterMax, unsigned int wRemoveMsg);
+WIN32_API(i32)
+PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
 
-WIN32_API(int)
+WIN32_API(i32)
 TranslateMessage(MSG *lpMsg);
 
-WIN32_API(LONG_PTR)
+WIN32_API(i64)
 DispatchMessageA(MSG *lpMsg);
 
-WIN32_API(LONG_PTR)
-DefWindowProcA(void *hWnd, unsigned int Msg, UINT_PTR wParam, LONG_PTR lParam);
+WIN32_API(i64)
+DefWindowProcA(void *hWnd, u32 Msg, u64 wParam, i64 lParam);
 
-WIN32_API(LONG_PTR)
-SetWindowLongPtrA(void *hWnd, int nIndex, LONG_PTR dwNewLong);
+WIN32_API(i64)
+SetWindowLongPtrA(void *hWnd, i32 nIndex, i64 dwNewLong);
 
-WIN32_API(LONG_PTR)
-GetWindowLongPtrA(void *hWnd, int nIndex);
-
-WIN32_API(void *)
-GetModuleHandleA(char *lpModuleName);
+WIN32_API(i64)
+GetWindowLongPtrA(void *hWnd, i32 nIndex);
 
 WIN32_API(void *)
-LoadCursorA(void *hInstance, char *lpCursorName);
+GetModuleHandleA(s8 *lpModuleName);
 
-WIN32_API(unsigned short)
+WIN32_API(void *)
+LoadCursorA(void *hInstance, s8 *lpCursorName);
+
+WIN32_API(u16)
 RegisterClassA(WNDCLASSA *lpWndClass);
 
 WIN32_API(void *)
-CreateWindowExA(unsigned long dwExStyle, char *lpClassName, char *lpWindowName, unsigned long dwStyle, int X, int Y, int nWidth, int nHeight, void *hWndParent, void *hMenu, void *hInstance, void *lpParam);
+CreateWindowExA(u32 dwExStyle, s8 *lpClassName, s8 *lpWindowName, u32 dwStyle, i32 X, i32 Y, i32 nWidth, i32 nHeight, void *hWndParent, void *hMenu, void *hInstance, void *lpParam);
 
-WIN32_API(int)
-SetWindowPos(void *hWnd, void *hWndInsertAfter, int X, int Y, int cx, int cy, unsigned int uFlags);
+WIN32_API(i32)
+SetWindowPos(void *hWnd, void *hWndInsertAfter, i32 X, i32 Y, i32 cx, i32 cy, u32 uFlags);
 
 WIN32_API(void *)
 GetDC(void *hWnd);
 
-WIN32_API(int)
+WIN32_API(i32)
 ReleaseDC(void *hWnd, void *hDC);
 
-WIN32_API(int)
+WIN32_API(i32)
 SwapBuffers(void *unnamedParam1);
 
-WIN32_API(int)
+WIN32_API(i32)
 ChoosePixelFormat(void *hdc, PIXELFORMATDESCRIPTOR *ppfd);
 
-WIN32_API(int)
-SetPixelFormat(void *hdc, int format, PIXELFORMATDESCRIPTOR *ppfd);
+WIN32_API(i32)
+SetPixelFormat(void *hdc, i32 format, PIXELFORMATDESCRIPTOR *ppfd);
 
-WIN32_API(int)
-DescribePixelFormat(void *hdc, int iPixelFormat, unsigned int nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+WIN32_API(i32)
+DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
 
-WIN32_API(int)
-ShowWindow(void *hWnd, int nCmdShow);
+WIN32_API(i32)
+ShowWindow(void *hWnd, i32 nCmdShow);
 
-WIN32_API(int)
+WIN32_API(i32)
 DestroyWindow(void *hWnd);
 
-WIN32_API(int)
-AdjustWindowRect(LPRECT lpRect, unsigned long dwStyle, int bMenu);
+WIN32_API(i32)
+AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
 
-WIN32_API(int)
+WIN32_API(i32)
 QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
 
-WIN32_API(int)
+WIN32_API(i32)
 QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
 
-WIN32_API(char *)
+WIN32_API(s8 *)
 GetCommandLineA(void);
 
 /* WGL */
@@ -333,33 +352,33 @@ wglGetCurrentContext(void);
 WIN32_API(void *)
 wglGetCurrentDC(void);
 
-WIN32_API(int)
+WIN32_API(i32)
 wglDeleteContext(void *unnamedParam1);
 
-WIN32_API(int)
+WIN32_API(i32)
 wglMakeCurrent(void *unnamedParam1, void *unnamedParam2);
 
 WIN32_API(PROC)
-wglGetProcAddress(char *unnamedParam1);
+wglGetProcAddress(s8 *unnamedParam1);
 
 /* OpenGL functions provided by win32 */
 WIN32_API(void)
-glClearColor(float red, float green, float blue, float alpha);
+glClearColor(f32 red, f32 green, f32 blue, f32 alpha);
 
 WIN32_API(void)
-glClear(unsigned int mask);
+glClear(u32 mask);
 
 WIN32_API(void)
-glViewport(int x, int y, int width, int height);
+glViewport(i32 x, i32 y, i32 width, i32 height);
 
 WIN32_API(void)
-glEnable(unsigned int cap);
+glEnable(u32 cap);
 
 WIN32_API(void)
-glDisable(unsigned int cap);
+glDisable(u32 cap);
 
-WIN32_API(unsigned char *)
-glGetString(unsigned int name);
+WIN32_API(u8 *)
+glGetString(u32 name);
 
 /* #############################################################################
  * # OpenGL Functions not automatically provided by win32 opengl32
@@ -384,13 +403,13 @@ glGetString(unsigned int name);
 #define WGL_CONTEXT_FLAGS_ARB 0x2094
 #define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
 
-typedef int (*PFNWGLCHOOSEPIXELFORMATARBPROC)(void *hdc, int *piAttribIList, float *pfAttribFList, unsigned int nMaxFormats, int *piFormats, unsigned int *nNumFormats);
+typedef i32 (*PFNWGLCHOOSEPIXELFORMATARBPROC)(void *hdc, i32 *piAttribIList, f32 *pfAttribFList, u32 nMaxFormats, i32 *piFormats, u32 *nNumFormats);
 static PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
 
-typedef void *(*PFNWGLCREATECONTEXTATTRIBSARBPROC)(void *hDC, void *hShareContext, int *attribList);
+typedef void *(*PFNWGLCREATECONTEXTATTRIBSARBPROC)(void *hDC, void *hShareContext, i32 *attribList);
 static PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 
-typedef int (*PFNWGLSWAPINTERVALEXTPROC)(int interval);
+typedef i32 (*PFNWGLSWAPINTERVALEXTPROC)(i32 interval);
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 
 /* OpenGL functions directly part of opengl32 lib */
@@ -406,73 +425,73 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_RENDERER 0x1F01
 #define GL_VERSION 0x1F02
 
-typedef unsigned int (*PFNGLCREATESHADERPROC)(unsigned int shaderType);
+typedef u32 (*PFNGLCREATESHADERPROC)(u32 shaderType);
 static PFNGLCREATESHADERPROC glCreateShader;
 
-typedef unsigned int (*PFNGLCREATEPROGRAMPROC)(void);
+typedef u32 (*PFNGLCREATEPROGRAMPROC)(void);
 static PFNGLCREATEPROGRAMPROC glCreateProgram;
 
-typedef void (*PFNGLDELETEPROGRAMPROC)(unsigned int program);
+typedef void (*PFNGLDELETEPROGRAMPROC)(u32 program);
 static PFNGLDELETEPROGRAMPROC glDeleteProgram;
 
-typedef void (*PFNGLATTACHSHADERPROC)(unsigned int program, unsigned int shader);
+typedef void (*PFNGLATTACHSHADERPROC)(u32 program, u32 shader);
 static PFNGLATTACHSHADERPROC glAttachShader;
 
-typedef void (*PFNGLSHADERSOURCEPROC)(unsigned int shader, int count, char **string, int *length);
+typedef void (*PFNGLSHADERSOURCEPROC)(u32 shader, i32 count, s8 **string, i32 *length);
 static PFNGLSHADERSOURCEPROC glShaderSource;
 
-typedef void (*PFNGLCOMPILESHADERPROC)(unsigned int shader);
+typedef void (*PFNGLCOMPILESHADERPROC)(u32 shader);
 static PFNGLCOMPILESHADERPROC glCompileShader;
 
-typedef void (*PFNGLGETSHADERIVPROC)(unsigned int shader, unsigned int pname, int *params);
+typedef void (*PFNGLGETSHADERIVPROC)(u32 shader, u32 pname, i32 *params);
 static PFNGLGETSHADERIVPROC glGetShaderiv;
 
-typedef void (*PFNGLGETSHADERINFOLOGPROC)(unsigned int shader, int maxLength, int *length, char *infoLog);
+typedef void (*PFNGLGETSHADERINFOLOGPROC)(u32 shader, i32 maxLength, i32 *length, s8 *infoLog);
 static PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
 
-typedef void (*PFNGLLINKPROGRAMPROC)(unsigned int program);
+typedef void (*PFNGLLINKPROGRAMPROC)(u32 program);
 static PFNGLLINKPROGRAMPROC glLinkProgram;
 
-typedef void (*PFNGLGETPROGRAMIVPROC)(unsigned int program, unsigned int pname, int *params);
+typedef void (*PFNGLGETPROGRAMIVPROC)(u32 program, u32 pname, i32 *params);
 static PFNGLGETPROGRAMIVPROC glGetProgramiv;
 
-typedef void (*PFNGLGETPROGRAMINFOLOGPROC)(unsigned int program, int maxLength, int *length, char *infoLog);
+typedef void (*PFNGLGETPROGRAMINFOLOGPROC)(u32 program, i32 maxLength, i32 *length, s8 *infoLog);
 static PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
 
-typedef void (*PFNGLDELETESHADERPROC)(unsigned int shader);
+typedef void (*PFNGLDELETESHADERPROC)(u32 shader);
 static PFNGLDELETESHADERPROC glDeleteShader;
 
-typedef void (*PFNGLDRAWARRAYSPROC)(unsigned int mode, int first, int count);
+typedef void (*PFNGLDRAWARRAYSPROC)(u32 mode, i32 first, i32 count);
 static PFNGLDRAWARRAYSPROC glDrawArrays;
 
-typedef void (*PFNGLUSEPROGRAMPROC)(unsigned int program);
+typedef void (*PFNGLUSEPROGRAMPROC)(u32 program);
 static PFNGLUSEPROGRAMPROC glUseProgram;
 
-typedef void (*PFNGLGENVERTEXARRAYSPROC)(int n, unsigned int *arrays);
+typedef void (*PFNGLGENVERTEXARRAYSPROC)(i32 n, u32 *arrays);
 static PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 
-typedef void (*PFNGLBINDVERTEXARRAYPROC)(unsigned int array);
+typedef void (*PFNGLBINDVERTEXARRAYPROC)(u32 array);
 static PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 
-typedef int (*PFNGLGETUNIFORMLOCATIONPROC)(unsigned int program, char *name);
+typedef i32 (*PFNGLGETUNIFORMLOCATIONPROC)(u32 program, s8 *name);
 static PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 
-typedef void (*PFNGLUNIFORM1FPROC)(int location, float v0);
+typedef void (*PFNGLUNIFORM1FPROC)(i32 location, f32 v0);
 static PFNGLUNIFORM1FPROC glUniform1f;
 
-typedef void (*PFNGLUNIFORM1IPROC)(int location, int v0);
+typedef void (*PFNGLUNIFORM1IPROC)(i32 location, i32 v0);
 static PFNGLUNIFORM1IPROC glUniform1i;
 
-typedef void (*PFNGLUNIFORM3FPROC)(int location, float v0, float v1, float v2);
+typedef void (*PFNGLUNIFORM3FPROC)(i32 location, f32 v0, f32 v1, f32 v2);
 static PFNGLUNIFORM3FPROC glUniform3f;
 
 /* #############################################################################
  * # Main Code
  * #############################################################################
  */
-SHADE_IT_API void win32_print(char *str)
+SHADE_IT_API void win32_print(s8 *str)
 {
-  static unsigned long written;
+  static u32 written;
   static void *stdout_handle;
 
   if (!stdout_handle)
@@ -481,8 +500,8 @@ SHADE_IT_API void win32_print(char *str)
   }
 
   {
-    char *p = str;
-    unsigned long len = 0;
+    s8 *p = str;
+    u32 len = 0;
 
     while (*p++)
     {
@@ -493,14 +512,14 @@ SHADE_IT_API void win32_print(char *str)
   }
 }
 
-SHADE_IT_API unsigned char *win32_file_read(char *filename, unsigned int *file_size_out)
+SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
 {
   void *hFile = INVALID_HANDLE;
-  unsigned long fileSize = 0;
-  unsigned long bytesRead = 0;
+  u32 fileSize = 0;
+  u32 bytesRead = 0;
 
-  unsigned char *buffer = 0;
-  int attempt;
+  u8 *buffer = 0;
+  i32 attempt;
 
   /* Retry loop for hot-reload: file might be locked or partially written */
   for (attempt = 0; attempt < 4; ++attempt)
@@ -535,7 +554,7 @@ SHADE_IT_API unsigned char *win32_file_read(char *filename, unsigned int *file_s
     return (void *)0;
   }
 
-  buffer = (unsigned char *)VirtualAlloc((void *)0, fileSize + 1, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  buffer = (u8 *)VirtualAlloc((void *)0, fileSize + 1, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
   if (!buffer)
   {
@@ -557,7 +576,7 @@ SHADE_IT_API unsigned char *win32_file_read(char *filename, unsigned int *file_s
   return buffer;
 }
 
-SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(char *file)
+SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
 {
   static FILETIME empty = {0, 0};
   WIN32_FILE_ATTRIBUTE_DATA fad;
@@ -572,10 +591,10 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(char *file)
  * Converts "program.exe arg1 arg2" -> argc=3, argv={"program.exe","arg1","arg2",NULL}
  * In-place: modifies the command line buffer.
  */
-SHADE_IT_API int win32_parse_command_line(unsigned char *cmdline, unsigned char ***argv_out)
+SHADE_IT_API i32 win32_parse_command_line(u8 *cmdline, u8 ***argv_out)
 {
-  static unsigned char *argv_local[8]; /* up to 8 args */
-  int argc = 0;
+  static u8 *argv_local[8]; /* up to 8 args */
+  i32 argc = 0;
 
   while (*cmdline)
   {
@@ -607,7 +626,7 @@ SHADE_IT_API int win32_parse_command_line(unsigned char *cmdline, unsigned char 
     }
   }
 
-  argv_local[argc] = (unsigned char *)0;
+  argv_local[argc] = (u8 *)0;
   *argv_out = argv_local;
 
   return argc;
@@ -616,31 +635,31 @@ SHADE_IT_API int win32_parse_command_line(unsigned char *cmdline, unsigned char 
 typedef struct win32_shade_it_state
 {
 
-  unsigned int window_width;
-  unsigned int window_height;
+  u32 window_width;
+  u32 window_height;
 
-  float window_clear_color_g;
-  float window_clear_color_b;
-  float window_clear_color_r;
-  float window_clear_color_a;
+  f32 window_clear_color_g;
+  f32 window_clear_color_b;
+  f32 window_clear_color_r;
+  f32 window_clear_color_a;
 
-  int iFrame;        /* Frames processed count               */
-  double iTime;      /* Total elapsed time in seconds        */
-  double iTimeDelta; /* Current render frame time in seconds */
-  double iFrameRate; /* Frame Rate per second                */
+  i32 iFrame;     /* Frames processed count               */
+  f64 iTime;      /* Total elapsed time in seconds        */
+  f64 iTimeDelta; /* Current render frame time in seconds */
+  f64 iFrameRate; /* Frame Rate per second                */
 
-  unsigned char running;
+  u8 running;
 
   void *window_handle;
   void *dc;
 
 } win32_shade_it_state;
 
-SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_window_callback(void *window, unsigned int message, UINT_PTR wParam, LONG_PTR lParam)
+SHADE_IT_API SHADE_IT_INLINE i64 WIN32_API_CALLBACK win32_window_callback(void *window, u32 message, u64 wParam, i64 lParam)
 {
   win32_shade_it_state *state = (win32_shade_it_state *)GetWindowLongPtrA(window, GWLP_USERDATA);
 
-  LONG_PTR result = 0;
+  i64 result = 0;
 
   switch (message)
   {
@@ -650,7 +669,7 @@ SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_window_callback(v
   {
     CREATESTRUCTA *cs = (CREATESTRUCTA *)lParam;
     state = (win32_shade_it_state *)cs->lpCreateParams;
-    SetWindowLongPtrA(window, GWLP_USERDATA, (LONG_PTR)state);
+    SetWindowLongPtrA(window, GWLP_USERDATA, (i64)state);
   }
   break;
   case WM_CLOSE:
@@ -665,10 +684,10 @@ SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_window_callback(v
   {
     if (state)
     {
-      state->window_width = (unsigned int)LOWORD(lParam);
-      state->window_height = (unsigned int)HIWORD(lParam);
+      state->window_width = (u32)LOWORD(lParam);
+      state->window_height = (u32)HIWORD(lParam);
 
-      glViewport(0, 0, (int)state->window_width, (int)state->window_height);
+      glViewport(0, 0, (i32)state->window_width, (i32)state->window_height);
     }
   }
   break;
@@ -682,12 +701,12 @@ SHADE_IT_API SHADE_IT_INLINE LONG_PTR WIN32_API_CALLBACK win32_window_callback(v
   return (result);
 }
 
-SHADE_IT_API int opengl_shader_compile(
-    char *shaderCode,
-    unsigned int shaderType)
+SHADE_IT_API i32 opengl_shader_compile(
+    s8 *shaderCode,
+    u32 shaderType)
 {
-  unsigned int shaderId = glCreateShader(shaderType);
-  int success;
+  u32 shaderId = glCreateShader(shaderType);
+  i32 success;
 
   glShaderSource(shaderId, 1, &shaderCode, (void *)0);
   glCompileShader(shaderId);
@@ -705,17 +724,17 @@ SHADE_IT_API int opengl_shader_compile(
     return -1;
   }
 
-  return (int)shaderId;
+  return (i32)shaderId;
 }
 
-SHADE_IT_API int opengl_shader_create(
-    unsigned int *shader_program,
-    char *shader_vertex_code,
-    char *shader_fragment_code)
+SHADE_IT_API i32 opengl_shader_create(
+    u32 *shader_program,
+    s8 *shader_vertex_code,
+    s8 *shader_fragment_code)
 {
-  int vertex_shader_id;
-  int fragment_shader_id;
-  int success;
+  i32 vertex_shader_id;
+  i32 fragment_shader_id;
+  i32 success;
 
   vertex_shader_id = opengl_shader_compile(shader_vertex_code, GL_VERTEX_SHADER);
 
@@ -732,12 +751,12 @@ SHADE_IT_API int opengl_shader_create(
   }
 
   *shader_program = glCreateProgram();
-  glAttachShader(*shader_program, (unsigned int)vertex_shader_id);
-  glAttachShader(*shader_program, (unsigned int)fragment_shader_id);
+  glAttachShader(*shader_program, (u32)vertex_shader_id);
+  glAttachShader(*shader_program, (u32)fragment_shader_id);
   glLinkProgram(*shader_program);
   glGetProgramiv(*shader_program, GL_LINK_STATUS, &success);
-  glDeleteShader((unsigned int)vertex_shader_id);
-  glDeleteShader((unsigned int)fragment_shader_id);
+  glDeleteShader((u32)vertex_shader_id);
+  glDeleteShader((u32)fragment_shader_id);
 
   if (!success)
   {
@@ -756,20 +775,20 @@ SHADE_IT_API int opengl_shader_create(
 
 typedef struct shader
 {
-  unsigned int created;
-  unsigned int program;
+  u32 created;
+  u32 program;
 
-  int loc_iResolution;
-  int loc_iTime;
-  int loc_iTimeDelta;
-  int loc_iFrame;
-  int loc_iFrameRate;
+  i32 loc_iResolution;
+  i32 loc_iTime;
+  i32 loc_iTimeDelta;
+  i32 loc_iFrame;
+  i32 loc_iFrameRate;
 
 } shader;
 
-SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
+SHADE_IT_API void opengl_shader_load(shader *shader, s8 *shader_file_name)
 {
-  static char *shader_code_vertex =
+  static s8 *shader_code_vertex =
       "#version 330 core\n"
       "\n"
       " vec2 positions[3] = vec2[3](\n"
@@ -783,14 +802,14 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
       "  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);\n"
       "}\n";
 
-  unsigned int size = 0;
-  unsigned char *src = win32_file_read(shader_file_name, &size);
+  u32 size = 0;
+  u8 *src = win32_file_read(shader_file_name, &size);
 
   if (src && size > 0)
   {
-    unsigned int new_program = 0;
+    u32 new_program = 0;
 
-    if (opengl_shader_create(&new_program, shader_code_vertex, (char *)src))
+    if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
     {
       glUseProgram(0);
 
@@ -822,17 +841,17 @@ SHADE_IT_API void opengl_shader_load(shader *shader, char *shader_file_name)
   }
 }
 
-SHADE_IT_API int start(int argc, unsigned char **argv)
+SHADE_IT_API i32 start(i32 argc, u8 **argv)
 {
   /* Default fragment shader file name to load if no file is passed as an argument in cli */
-  char *fragment_shader_file_name = "shade_it.fs";
+  s8 *fragment_shader_file_name = "shade_it.fs";
 
   win32_shade_it_state state = {0};
   shader main_shader = {0};
 
   if (argv && argc > 1)
   {
-    fragment_shader_file_name = (char *)argv[1];
+    fragment_shader_file_name = (s8 *)argv[1];
   }
 
   win32_print("[opengl] load shader file: ");
@@ -855,15 +874,15 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
     void *fakeWND;
     void *fakeDC;
-    int fakePFDID;
+    i32 fakePFDID;
     void *fakeRC;
 
-    unsigned long windowStyle;
+    u32 windowStyle;
 
     PIXELFORMATDESCRIPTOR fakePFD = {0};
     RECT rect = {0};
 
-    int pixelAttribs[] = {
+    i32 pixelAttribs[] = {
         WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
         WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
         WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
@@ -875,7 +894,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         WGL_STENCIL_BITS_ARB, 8,
         0};
 
-    int contextAttribs[] = {
+    i32 contextAttribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
         WGL_CONTEXT_MINOR_VERSION_ARB, 3,
         WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
@@ -935,12 +954,12 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
     windowStyle = WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
 
-    rect.right = (long)state.window_width;
-    rect.bottom = (long)state.window_height;
+    rect.right = (i32)state.window_width;
+    rect.bottom = (i32)state.window_height;
 
     AdjustWindowRect(&rect, windowStyle, 0);
-    state.window_width = (unsigned int)(rect.right - rect.left);
-    state.window_height = (unsigned int)(rect.bottom - rect.top);
+    state.window_width = (u32)(rect.right - rect.left);
+    state.window_height = (u32)(rect.bottom - rect.top);
 
     state.window_handle = CreateWindowExA(
         0,
@@ -948,7 +967,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         windowClass.lpszClassName,
         windowStyle,
         0, 0,
-        (int)state.window_width, (int)state.window_height,
+        (i32)state.window_width, (i32)state.window_height,
         0, 0,
         instance,
         &state /* Pass pointer to user data to the window callback */
@@ -995,8 +1014,8 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
     /* Set Pixel Format */
     {
-      int pixelFormatID;
-      unsigned int numFormats;
+      i32 pixelFormatID;
+      u32 numFormats;
 
       if (!wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
       {
@@ -1041,11 +1060,11 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
     ShowWindow(state.window_handle, SW_SHOW);
 
     glDisable(GL_MULTISAMPLE);
-    glViewport(0, 0, (int)state.window_width, (int)state.window_height);
+    glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
 
     /* Generate a dummy vao with no buffer */
     {
-      unsigned int vao;
+      u32 vao;
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
@@ -1055,9 +1074,9 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
 
     /* Print opengl information */
     {
-      char *vendor = (char *)glGetString(GL_VENDOR);
-      char *renderer = (char *)glGetString(GL_RENDERER);
-      char *version = (char *)glGetString(GL_VERSION);
+      s8 *vendor = (s8 *)glGetString(GL_VENDOR);
+      s8 *renderer = (s8 *)glGetString(GL_RENDERER);
+      s8 *version = (s8 *)glGetString(GL_VERSION);
 
       win32_print("[opengl] vendor  : ");
       win32_print(vendor);
@@ -1096,8 +1115,8 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
         LARGE_INTEGER time_now;
         QueryPerformanceCounter(&time_now);
 
-        state.iTimeDelta = (double)(time_now.QuadPart - time_last.QuadPart) / (double)perf_freq.QuadPart;
-        state.iTime = (double)(time_now.QuadPart - time_start.QuadPart) / (double)perf_freq.QuadPart;
+        state.iTimeDelta = (f64)(time_now.QuadPart - time_last.QuadPart) / (f64)perf_freq.QuadPart;
+        state.iTime = (f64)(time_now.QuadPart - time_start.QuadPart) / (f64)perf_freq.QuadPart;
 
         time_last = time_now;
 
@@ -1149,11 +1168,11 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
       /* Rendering                  */
       /******************************/
       glClear(GL_COLOR_BUFFER_BIT);
-      glUniform3f(main_shader.loc_iResolution, (float)state.window_width, (float)state.window_height, 1.0f);
-      glUniform1f(main_shader.loc_iTime, (float)state.iTime);
-      glUniform1f(main_shader.loc_iTimeDelta, (float)state.iTimeDelta);
+      glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
+      glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
+      glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
       glUniform1i(main_shader.loc_iFrame, state.iFrame);
-      glUniform1f(main_shader.loc_iFrameRate, (float)state.iFrameRate);
+      glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
       glDrawArrays(GL_TRIANGLES, 0, 3);
       SwapBuffers(state.dc);
 
@@ -1163,13 +1182,13 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
       {
         LARGE_INTEGER time_end;
 
-        double frame_time;
-        double remaining;
-        double target_frame_time = 1.0 / 60.0;
+        f64 frame_time;
+        f64 remaining;
+        f64 target_frame_time = 1.0 / 60.0;
 
         QueryPerformanceCounter(&time_end);
 
-        frame_time = (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (double)perf_freq.QuadPart;
+        frame_time = (f64)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (f64)perf_freq.QuadPart;
 
         remaining = target_frame_time - frame_time;
 
@@ -1178,7 +1197,8 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
           /* Sleep most of it (milliseconds) */
           if (remaining > 0.002)
           {
-            unsigned long sleep_ms = (unsigned long)((remaining - 0.001) * 1000.0);
+            u32 sleep_ms = (u32)((remaining - 0.001) * 1000.0);
+
             if (sleep_ms > 0)
             {
               Sleep(sleep_ms);
@@ -1190,7 +1210,7 @@ SHADE_IT_API int start(int argc, unsigned char **argv)
           {
             QueryPerformanceCounter(&time_end);
 
-            frame_time = (double)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (double)perf_freq.QuadPart;
+            frame_time = (f64)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (f64)perf_freq.QuadPart;
 
             if (frame_time >= target_frame_time)
             {
@@ -1217,15 +1237,15 @@ __attribute((externally_visible))
 #ifdef __i686__
 __attribute((force_align_arg_pointer))
 #endif
-int mainCRTStartup(void)
+i32 mainCRTStartup(void)
 {
-  unsigned char *cmdline = (unsigned char *)GetCommandLineA();
-  unsigned char **argv;
+  u8 *cmdline = (u8 *)GetCommandLineA();
+  u8 **argv;
 
-  int argc = win32_parse_command_line(cmdline, &argv);
-  int return_code = start(argc, argv);
+  i32 argc = win32_parse_command_line(cmdline, &argv);
+  i32 return_code = start(argc, argv);
 
-  ExitProcess((unsigned int)return_code);
+  ExitProcess((u32)return_code);
   return return_code;
 }
 
