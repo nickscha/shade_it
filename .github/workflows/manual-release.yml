@@ -41,12 +41,14 @@ jobs:
 
       - name: Get latest release tag
         id: get_tag
+        shell: bash
         run: |
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           echo "latest_tag=$latest_tag" >> "$GITHUB_OUTPUT"
 
       - name: Get commit logs
         id: get_commits
+        shell: bash
         run: |
           if [ -z "${{ steps.get_tag.outputs.latest_tag }}" ]; then
             log_range="HEAD"
@@ -55,9 +57,9 @@ jobs:
             log_range="${{ steps.get_tag.outputs.latest_tag }}..HEAD"
             echo "Listing commits since tag ${{ steps.get_tag.outputs.latest_tag }}"
           fi
-          
+
           commit_log=$(git log --pretty=format:'* %s (%h)' $log_range)
-          
+
           echo "commits_body<<EOF" >> "$GITHUB_OUTPUT"
           echo "$commit_log" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
