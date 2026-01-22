@@ -91,6 +91,8 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define WM_QUIT 0x0012
 #define WM_SIZE 0x0005
 
+#define SIZE_MINIMIZED 1
+
 #define HWND_TOPMOST ((void *)-1)
 #define SWP_NOSIZE 0x0001
 #define SWP_NOMOVE 0x0002
@@ -275,6 +277,9 @@ ExitProcess(u32 uExitCode);
 
 WIN32_API(i32)
 PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
+
+WIN32_API(i32)
+GetMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
 
 WIN32_API(i32)
 TranslateMessage(MSG *lpMsg);
@@ -649,6 +654,7 @@ typedef struct win32_shade_it_state
   f64 iFrameRate; /* Frame Rate per second                */
 
   u8 running;
+  u8 minimized;
 
   void *window_handle;
   void *dc;
@@ -674,19 +680,30 @@ SHADE_IT_API SHADE_IT_INLINE i64 WIN32_API_CALLBACK win32_window_callback(void *
   break;
   case WM_CLOSE:
   {
-    if (state)
+    if (!state)
     {
-      state->running = 0;
+      break;
     }
+
+    state->running = 0;
   }
   break;
   case WM_SIZE:
   {
-    if (state)
+    if (!state)
     {
-      state->window_width = (u32)LOWORD(lParam);
-      state->window_height = (u32)HIWORD(lParam);
+      break;
+    }
 
+    if (wParam == SIZE_MINIMIZED)
+    {
+      state->minimized = 1;
+    }
+    else
+    {
+      state->minimized = 0;
+      state->window_width = LOWORD(lParam);
+      state->window_height = HIWORD(lParam);
       glViewport(0, 0, (i32)state->window_width, (i32)state->window_height);
     }
   }
@@ -1124,6 +1141,18 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         {
           state.iFrameRate = 1.0 / state.iTimeDelta;
         }
+      }
+
+      /******************************/
+      /* Idle when window minimized */
+      /******************************/
+      if (state.minimized)
+      {
+        MSG msg;
+        GetMessageA(&msg, 0, 0, 0);
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
+        continue;
       }
 
       /******************************/
