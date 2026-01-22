@@ -828,8 +828,6 @@ SHADE_IT_API void opengl_shader_load(shader *shader, s8 *shader_file_name)
 
     if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
     {
-      glUseProgram(0);
-
       if (shader->created)
       {
         glDeleteProgram(shader->program);
