@@ -548,7 +548,7 @@ SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
 
   if (hFile == INVALID_HANDLE)
   {
-    return 0;
+    return (void *)0;
   }
 
   fileSize = GetFileSize(hFile, 0);
@@ -556,7 +556,7 @@ SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
   if (fileSize == INVALID_FILE_SIZE || fileSize == 0)
   {
     CloseHandle(hFile);
-    return 0;
+    return (void *)0;
   }
 
   buffer = (u8 *)VirtualAlloc(0, fileSize + 1, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -564,14 +564,14 @@ SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
   if (!buffer)
   {
     CloseHandle(hFile);
-    return 0;
+    return (void *)0;
   }
 
   if (!ReadFile(hFile, buffer, fileSize, &bytesRead, 0) || bytesRead != fileSize)
   {
     VirtualFree(buffer, 0, MEM_RELEASE);
     CloseHandle(hFile);
-    return 0;
+    return (void *)0;
   }
 
   buffer[fileSize] = '\0';
