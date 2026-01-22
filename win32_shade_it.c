@@ -533,10 +533,10 @@ SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
         filename,
         GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, /* Hot-reload safe */
-        (void *)0,
+        0,
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-        (void *)0);
+        0);
 
     if (hFile != INVALID_HANDLE)
     {
@@ -548,30 +548,30 @@ SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
 
   if (hFile == INVALID_HANDLE)
   {
-    return (void *)0;
+    return 0;
   }
 
-  fileSize = GetFileSize(hFile, (void *)0);
+  fileSize = GetFileSize(hFile, 0);
 
   if (fileSize == INVALID_FILE_SIZE || fileSize == 0)
   {
     CloseHandle(hFile);
-    return (void *)0;
+    return 0;
   }
 
-  buffer = (u8 *)VirtualAlloc((void *)0, fileSize + 1, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  buffer = (u8 *)VirtualAlloc(0, fileSize + 1, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
   if (!buffer)
   {
     CloseHandle(hFile);
-    return (void *)0;
+    return 0;
   }
 
-  if (!ReadFile(hFile, buffer, fileSize, &bytesRead, (void *)0) || bytesRead != fileSize)
+  if (!ReadFile(hFile, buffer, fileSize, &bytesRead, 0) || bytesRead != fileSize)
   {
     VirtualFree(buffer, 0, MEM_RELEASE);
     CloseHandle(hFile);
-    return (void *)0;
+    return 0;
   }
 
   buffer[fileSize] = '\0';
@@ -725,14 +725,14 @@ SHADE_IT_API i32 opengl_shader_compile(
   u32 shaderId = glCreateShader(shaderType);
   i32 success;
 
-  glShaderSource(shaderId, 1, &shaderCode, (void *)0);
+  glShaderSource(shaderId, 1, &shaderCode, 0);
   glCompileShader(shaderId);
   glGetShaderiv(shaderId, GL_COMPILE_STATUS, &success);
 
   if (!success)
   {
     char infoLog[1024];
-    glGetShaderInfoLog(shaderId, 1024, (void *)0, infoLog);
+    glGetShaderInfoLog(shaderId, 1024, 0, infoLog);
 
     win32_print("[opengl] shader compilation error:\n");
     win32_print(infoLog);
@@ -778,7 +778,7 @@ SHADE_IT_API i32 opengl_shader_create(
   if (!success)
   {
     char infoLog[1024];
-    glGetProgramInfoLog(*shader_program, 1024, (void *)0, infoLog);
+    glGetProgramInfoLog(*shader_program, 1024, 0, infoLog);
 
     win32_print("[opengl] program creation error:\n");
     win32_print(infoLog);
@@ -877,8 +877,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
-  state.window_handle = (void *)0;
-  state.dc = (void *)0;
+  state.window_handle = 0;
+  state.dc = 0;
 
   /******************************/
   /* Window and OpenGL context  */
