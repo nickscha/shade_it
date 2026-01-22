@@ -1046,17 +1046,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     {
       void *rc = wglCreateContextAttribsARB(state.dc, 0, contextAttribs);
 
-      if (!rc)
-      {
-        return 1;
-      }
-
       wglMakeCurrent(0, 0);
       wglDeleteContext(fakeRC);
       ReleaseDC(fakeWND, fakeDC);
       DestroyWindow(fakeWND);
 
-      if (!wglMakeCurrent(state.dc, rc))
+      if (!rc || !wglMakeCurrent(state.dc, rc))
       {
         return 1;
       }
