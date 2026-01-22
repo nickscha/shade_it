@@ -906,7 +906,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
     windowClass.hbrBackground = 0;
-    windowClass.lpszClassName = "shade_it";
+    windowClass.lpszClassName = "shade_it v0.4";
 
     if (!RegisterClassA(&windowClass))
     {
