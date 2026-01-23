@@ -92,10 +92,6 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 
 #define SIZE_MINIMIZED 1
 
-#define HWND_TOPMOST ((void *)-1)
-#define SWP_NOSIZE 0x0001
-#define SWP_NOMOVE 0x0002
-
 #define CS_OWNDC 0x0020
 
 #define WS_CLIPSIBLINGS 0x04000000
@@ -307,9 +303,6 @@ RegisterClassA(WNDCLASSA *lpWndClass);
 WIN32_API(void *)
 CreateWindowExA(u32 dwExStyle, s8 *lpClassName, s8 *lpWindowName, u32 dwStyle, i32 X, i32 Y, i32 nWidth, i32 nHeight, void *hWndParent, void *hMenu, void *hInstance, void *lpParam);
 
-WIN32_API(i32)
-SetWindowPos(void *hWnd, void *hWndInsertAfter, i32 X, i32 Y, i32 cx, i32 cy, u32 uFlags);
-
 WIN32_API(void *)
 GetDC(void *hWnd);
 
@@ -420,6 +413,7 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_TRUE 1
 #define GL_TRIANGLES 0x0004
 #define GL_COLOR_BUFFER_BIT 0x00004000
+#define GL_FRAMEBUFFER_SRGB 0x8DB9
 #define GL_MULTISAMPLE 0x809D
 #define GL_COMPILE_STATUS 0x8B81
 #define GL_VERTEX_SHADER 0x8B31
@@ -922,10 +916,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
     rect.right = (i32)state.window_width;
     rect.bottom = (i32)state.window_height;
-
     AdjustWindowRect(&rect, windowStyle, 0);
-    state.window_width = (u32)(rect.right - rect.left);
-    state.window_height = (u32)(rect.bottom - rect.top);
 
     state.window_handle = CreateWindowExA(
         0,
@@ -939,9 +930,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         &state /* Pass pointer to user data to the window callback */
     );
 
-    /* Modal window */
-    SetWindowPos(state.window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-
     state.dc = GetDC(state.window_handle);
 
 #ifdef _MSC_VER
@@ -953,6 +941,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
     wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+
+    if (!wglChoosePixelFormatARB || !wglCreateContextAttribsARB)
+    {
+      win32_print("[opengl] required WGL extensions 'wglChoosePixelFormatARB', 'wglCreateContextAttribsARB' missing!\n");
+      return 1;
+    }
 
     /* OpenGL functions that are not part of the opengl32 lib */
     glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
@@ -1019,7 +1013,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
     /* Make the window visible */
     ShowWindow(state.window_handle, SW_SHOW);
-
+    glDisable(GL_FRAMEBUFFER_SRGB);
     glDisable(GL_MULTISAMPLE);
     glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
 
