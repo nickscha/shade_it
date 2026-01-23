@@ -1,4 +1,4 @@
-/* win32_shade_it.c - v0.4 - public domain data structures - nickscha 2026
+/* win32_shade_it.c - v0.5 - public domain data structures - nickscha 2026
 
 A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
 
@@ -874,7 +874,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
     windowClass.hbrBackground = 0;
-    windowClass.lpszClassName = "shade_it v0.4";
+    windowClass.lpszClassName = "shade_it v0.5";
 
     if (!RegisterClassA(&windowClass))
     {
