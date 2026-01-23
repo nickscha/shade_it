@@ -298,6 +298,9 @@ GetModuleHandleA(s8 *lpModuleName);
 WIN32_API(void *)
 LoadCursorA(void *hInstance, s8 *lpCursorName);
 
+WIN32_API(void *)
+LoadIconA(void *hInstance, s8 *lpIconName);
+
 WIN32_API(u16)
 RegisterClassA(WNDCLASSA *lpWndClass);
 
@@ -874,6 +877,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     windowClass.lpfnWndProc = win32_window_callback;
     windowClass.hInstance = instance;
     windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
+    windowClass.hIcon = LoadIconA(instance, MAKEINTRESOURCEA(1));
     windowClass.hbrBackground = 0;
     windowClass.lpszClassName = "shade_it v0.5";
 

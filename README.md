@@ -28,7 +28,7 @@ A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL S
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
 - **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
-- **Minimal binary size** — around 9kb binary
+- **Minimal binary size** — around 16kb binary
 - **Strict compilation** — built with aggressive warnings & safety checks  
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 

@@ -36,7 +36,7 @@ jobs:
             -Wdouble-promotion -Wmissing-field-initializers \
             -Wuninitialized -Winit-self -Wunused \
             -Wunused-macros -Wunused-local-typedefs \
-            win32_shade_it.c -o win32_shade_it.exe \
+            win32_shade_it.c win32_shade_it.res -o win32_shade_it.exe \
             -lkernel32 -luser32 -lgdi32 -lopengl32
 
       - name: Get latest release tag

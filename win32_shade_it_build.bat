@@ -11,5 +11,5 @@ set DEF_COMPILER_FLAGS=-mwindows -march=native -mtune=native ^
 
 set DEF_FLAGS_LINKER=-lkernel32 -luser32 -lgdi32 -lopengl32
 
-cc -s -O2 %DEF_COMPILER_FLAGS% %PLATFORM_NAME%.c -o %PLATFORM_NAME%.exe %DEF_FLAGS_LINKER%
+cc -s -O2 %DEF_COMPILER_FLAGS% %PLATFORM_NAME%.c win32_shade_it.res -o %PLATFORM_NAME%.exe %DEF_FLAGS_LINKER%
 %PLATFORM_NAME%.exe
