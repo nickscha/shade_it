@@ -606,7 +606,8 @@ typedef struct win32_shade_it_state
   f64 iFrameRate; /* Frame Rate per second                */
 
   u8 running;
-  u8 minimized;
+  u8 window_minimized;
+  u8 window_size_changed;
 
   void *window_handle;
   void *dc;
@@ -649,14 +650,14 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
     if (wParam == SIZE_MINIMIZED)
     {
-      state->minimized = 1;
+      state->window_minimized = 1;
     }
     else
     {
-      state->minimized = 0;
+      state->window_minimized = 0;
+      state->window_size_changed = 1;
       state->window_width = LOWORD(lParam);
       state->window_height = HIWORD(lParam);
-      glViewport(0, 0, (i32)state->window_width, (i32)state->window_height);
     }
   }
   break;
@@ -1088,7 +1089,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       /* Idle when window minimized */
       /******************************/
-      if (state.minimized)
+      if (state.window_minimized)
       {
         MSG msg;
         GetMessageA(&msg, 0, 0, 0);
@@ -1138,6 +1139,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       /* Rendering                  */
       /******************************/
+      if (state.window_size_changed)
+      {
+        glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
+        state.window_size_changed = 0;
+      }
       glClear(GL_COLOR_BUFFER_BIT);
       glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
       glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
