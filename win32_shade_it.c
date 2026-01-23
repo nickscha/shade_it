@@ -817,39 +817,40 @@ SHADE_IT_API void opengl_shader_load(shader *shader, s8 *shader_file_name)
 
   u32 size = 0;
   u8 *src = win32_file_read(shader_file_name, &size);
+  u32 new_program = 0;
 
-  if (src && size > 0)
+  if (!src || size < 1)
   {
-    u32 new_program = 0;
-
-    if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
-    {
-      if (shader->created)
-      {
-        glDeleteProgram(shader->program);
-      }
-
-      shader->program = new_program;
-
-      glUseProgram(shader->program);
-
-      shader->loc_iResolution = glGetUniformLocation(shader->program, "iResolution");
-      shader->loc_iTime = glGetUniformLocation(shader->program, "iTime");
-      shader->loc_iTimeDelta = glGetUniformLocation(shader->program, "iTimeDelta");
-      shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
-      shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
-
-      shader->created = 1;
-
-      win32_print("[opengl] fragment shader loaded\n");
-    }
-    else
-    {
-      win32_print("[opengl] compile failed, keeping old shader\n");
-    }
-
-    VirtualFree(src, 0, MEM_RELEASE);
+    return;
   }
+
+  if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
+  {
+    if (shader->created)
+    {
+      glDeleteProgram(shader->program);
+    }
+
+    shader->program = new_program;
+
+    glUseProgram(shader->program);
+
+    shader->loc_iResolution = glGetUniformLocation(shader->program, "iResolution");
+    shader->loc_iTime = glGetUniformLocation(shader->program, "iTime");
+    shader->loc_iTimeDelta = glGetUniformLocation(shader->program, "iTimeDelta");
+    shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
+    shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
+
+    shader->created = 1;
+
+    win32_print("[opengl] fragment shader loaded\n");
+  }
+  else
+  {
+    win32_print("[opengl] compile failed, keeping old shader\n");
+  }
+
+  VirtualFree(src, 0, MEM_RELEASE);
 }
 
 SHADE_IT_API i32 start(i32 argc, u8 **argv)
