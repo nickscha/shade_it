@@ -1007,43 +1007,39 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     }
 
     /* Avoid clear color flickering */
+    glDisable(GL_FRAMEBUFFER_SRGB);
+    glDisable(GL_MULTISAMPLE);
+    glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
     glClearColor(state.window_clear_color_r, state.window_clear_color_g, state.window_clear_color_b, state.window_clear_color_a);
     glClear(GL_COLOR_BUFFER_BIT);
+
     SwapBuffers(state.dc);
 
     /* Make the window visible */
     ShowWindow(state.window_handle, SW_SHOW);
-    glDisable(GL_FRAMEBUFFER_SRGB);
-    glDisable(GL_MULTISAMPLE);
-    glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
 
-    /* Generate a dummy vao with no buffer */
     {
+      /* Generate a dummy vao with no buffer */
       u32 vao;
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
-      /* TODO: check failures */
-      opengl_shader_load(&main_shader, fragment_shader_file_name);
-    }
-
-    /* Print opengl information */
-    {
-      s8 *vendor = (s8 *)glGetString(GL_VENDOR);
-      s8 *renderer = (s8 *)glGetString(GL_RENDERER);
-      s8 *version = (s8 *)glGetString(GL_VERSION);
-
+      /* Print opengl information */
       win32_print("[opengl] vendor  : ");
-      win32_print(vendor);
+      win32_print((s8 *)glGetString(GL_VENDOR));
       win32_print("\n");
 
       win32_print("[opengl] renderer: ");
-      win32_print(renderer);
+      win32_print((s8 *)glGetString(GL_RENDERER));
       win32_print("\n");
 
       win32_print("[opengl] version : ");
-      win32_print(version);
+      win32_print((s8 *)glGetString(GL_VERSION));
       win32_print("\n");
+
+      /* Load Fragment Shader source code from file */
+      /* TODO: check failures */
+      opengl_shader_load(&main_shader, fragment_shader_file_name);
     }
   }
 
