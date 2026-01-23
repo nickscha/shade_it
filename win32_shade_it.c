@@ -591,10 +591,6 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
 /* ############################################################################
  * # Command line parsing
  * ############################################################################
- *
- * Basic (non-quoted) command line parser
- * Converts "program.exe arg1 arg2" -> argc=3, argv={"program.exe","arg1","arg2",NULL}
- * In-place: modifies the command line buffer.
  */
 SHADE_IT_API i32 win32_parse_command_line(u8 *cmdline, u8 ***argv_out)
 {
