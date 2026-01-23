@@ -588,51 +588,6 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
   return GetFileAttributesExA(file, GetFileExInfoStandard, &fad) ? fad.ftLastWriteTime : empty;
 }
 
-/* ############################################################################
- * # Command line parsing
- * ############################################################################
- */
-SHADE_IT_API i32 win32_parse_command_line(u8 *cmdline, u8 ***argv_out)
-{
-  static u8 *argv_local[8]; /* up to 8 args */
-  i32 argc = 0;
-
-  while (*cmdline)
-  {
-    /* skip whitespace */
-    while (*cmdline == ' ' || *cmdline == '\t')
-    {
-      cmdline++;
-    }
-
-    if (!*cmdline)
-    {
-      break;
-    }
-
-    if (argc < 9)
-    {
-      argv_local[argc++] = cmdline;
-    }
-
-    /* parse token (basic, no quote handling) */
-    while (*cmdline && *cmdline != ' ' && *cmdline != '\t')
-    {
-      cmdline++;
-    }
-
-    if (*cmdline)
-    {
-      *cmdline++ = '\0';
-    }
-  }
-
-  argv_local[argc] = (u8 *)0;
-  *argv_out = argv_local;
-
-  return argc;
-}
-
 typedef struct win32_shade_it_state
 {
 
@@ -1259,11 +1214,46 @@ __attribute((force_align_arg_pointer))
 i32 mainCRTStartup(void)
 {
   u8 *cmdline = (u8 *)GetCommandLineA();
-  u8 **argv;
+  u8 *argv[8];
+  i32 argc = 0;
 
-  i32 argc = win32_parse_command_line(cmdline, &argv);
-  i32 return_code = start(argc, argv);
+  i32 return_code;
 
+  /* Parse command line arguments into argv */
+  while (*cmdline)
+  {
+    /* skip whitespace */
+    while (*cmdline == ' ' || *cmdline == '\t')
+    {
+      cmdline++;
+    }
+
+    if (!*cmdline)
+    {
+      break;
+    }
+
+    if (argc < 9)
+    {
+      argv[argc++] = cmdline;
+    }
+
+    /* parse token (basic, no quote handling) */
+    while (*cmdline && *cmdline != ' ' && *cmdline != '\t')
+    {
+      cmdline++;
+    }
+
+    if (*cmdline)
+    {
+      *cmdline++ = '\0';
+    }
+  }
+
+  argv[argc] = (u8 *)0;
+
+  /* Run the program and exit with return code */
+  return_code = start(argc, argv);
   ExitProcess((u32)return_code);
   return return_code;
 }
