@@ -68,10 +68,11 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
  */
 #define WIN32_API(r) __declspec(dllimport) r __stdcall
 
-#define STD_OUTPUT_HANDLE ((u32) - 11)
 #define INVALID_FILE_SIZE ((u32)0xFFFFFFFF)
 #define INVALID_HANDLE ((void *)-1)
 #define GENERIC_READ (0x80000000L)
+#define GENERIC_WRITE (0x40000000L)
+#define CREATE_ALWAYS 2
 #define FILE_SHARE_READ 0x00000001
 #define FILE_SHARE_WRITE 0x00000002
 #define FILE_SHARE_DELETE 0x00000004
@@ -490,11 +491,18 @@ static PFNGLUNIFORM3FPROC glUniform3f;
 SHADE_IT_API void win32_print(s8 *str)
 {
   static u32 written;
-  static void *stdout_handle;
+  static void *log_file;
 
-  if (!stdout_handle)
+  if (!log_file)
   {
-    stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    log_file = CreateFileA(
+        "shade_it.log",
+        GENERIC_WRITE,
+        FILE_SHARE_READ,
+        0,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        0);
   }
 
   {
@@ -506,7 +514,7 @@ SHADE_IT_API void win32_print(s8 *str)
       len++;
     }
 
-    WriteFile(stdout_handle, str, len, &written, 0);
+    WriteFile(log_file, str, len, &written, 0);
   }
 }
 
