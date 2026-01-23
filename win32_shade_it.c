@@ -67,7 +67,6 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
  * #############################################################################
  */
 #define WIN32_API(r) __declspec(dllimport) r __stdcall
-#define WIN32_API_CALLBACK __stdcall
 
 #define STD_OUTPUT_HANDLE ((u32) - 11)
 #define INVALID_FILE_SIZE ((u32)0xFFFFFFFF)
@@ -124,7 +123,7 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define IDC_ARROW MAKEINTRESOURCEA(32512)
 
 typedef void *(*PROC)(void);
-typedef i64(WIN32_API_CALLBACK *WNDPROC)(void *, u32, u64, i64);
+typedef i64 (*WNDPROC)(void *, u32, u64, i64);
 
 typedef struct tagCREATESTRUCTA
 {
@@ -612,7 +611,7 @@ typedef struct win32_shade_it_state
 
 } win32_shade_it_state;
 
-SHADE_IT_API SHADE_IT_INLINE i64 WIN32_API_CALLBACK win32_window_callback(void *window, u32 message, u64 wParam, i64 lParam)
+SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message, u64 wParam, i64 lParam)
 {
   win32_shade_it_state *state = (win32_shade_it_state *)GetWindowLongPtrA(window, GWLP_USERDATA);
 
