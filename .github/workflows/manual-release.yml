@@ -24,7 +24,7 @@ jobs:
       - name: Compile win32_shade_it
         shell: bash
         run: |
-          gcc -s -O2 -mconsole -march=native -mtune=native \
+          gcc -s -O2 -mwindows -march=native -mtune=native \
             -std=c89 -pedantic -nodefaultlibs -nostdlib \
             -mno-stack-arg-probe \
             -Xlinker /STACK:0x100000,0x100000 \
