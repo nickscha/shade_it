@@ -1019,6 +1019,19 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       wglSwapIntervalEXT(0);
     }
 
+    /* Print opengl information */
+    win32_print("[opengl] vendor  : ");
+    win32_print((s8 *)glGetString(GL_VENDOR));
+    win32_print("\n");
+
+    win32_print("[opengl] renderer: ");
+    win32_print((s8 *)glGetString(GL_RENDERER));
+    win32_print("\n");
+
+    win32_print("[opengl] version : ");
+    win32_print((s8 *)glGetString(GL_VERSION));
+    win32_print("\n");
+
     /* Avoid clear color flickering */
     glDisable(GL_FRAMEBUFFER_SRGB);
     glDisable(GL_MULTISAMPLE);
@@ -1037,21 +1050,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
 
-      /* Print opengl information */
-      win32_print("[opengl] vendor  : ");
-      win32_print((s8 *)glGetString(GL_VENDOR));
-      win32_print("\n");
-
-      win32_print("[opengl] renderer: ");
-      win32_print((s8 *)glGetString(GL_RENDERER));
-      win32_print("\n");
-
-      win32_print("[opengl] version : ");
-      win32_print((s8 *)glGetString(GL_VERSION));
-      win32_print("\n");
-
       /* Load Fragment Shader source code from file */
-      /* TODO: check failures */
       opengl_shader_load(&main_shader, fragment_shader_file_name);
     }
   }
@@ -1110,7 +1109,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         if (CompareFileTime(&fs_now, &fs_last) != 0)
         {
-          /* TODO: check failures */
           opengl_shader_load(&main_shader, fragment_shader_file_name);
           fs_last = fs_now;
 
