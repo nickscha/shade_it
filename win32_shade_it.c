@@ -676,6 +676,205 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   return (result);
 }
 
+SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
+{
+  void *instance = GetModuleHandleA(0);
+  WNDCLASSA windowClass = {0};
+
+  void *fakeWND;
+  void *fakeDC;
+  i32 fakePFDID;
+  void *fakeRC;
+
+  u32 windowStyle;
+
+  PIXELFORMATDESCRIPTOR fakePFD = {0};
+  RECT rect = {0};
+
+  i32 pixelAttribs[] = {
+      WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+      WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+      WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+      WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+      WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+      WGL_COLOR_BITS_ARB, 32,
+      WGL_ALPHA_BITS_ARB, 8,
+      WGL_DEPTH_BITS_ARB, 24,
+      WGL_STENCIL_BITS_ARB, 8,
+      0};
+
+  i32 contextAttribs[] = {
+      WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+      WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+      WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+      WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+      0};
+
+  windowClass.style = CS_OWNDC;
+  windowClass.lpfnWndProc = win32_window_callback;
+  windowClass.hInstance = instance;
+  windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
+  windowClass.hIcon = LoadIconA(instance, MAKEINTRESOURCEA(1));
+  windowClass.hbrBackground = 0;
+  windowClass.lpszClassName = state->window_title;
+
+  if (!RegisterClassA(&windowClass))
+  {
+    return 0;
+  }
+
+  fakeWND = CreateWindowExA(
+      0,
+      windowClass.lpszClassName,
+      windowClass.lpszClassName,
+      WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+      0, 0,
+      1, 1,
+      0, 0,
+      instance, 0);
+
+  if (!fakeWND)
+  {
+    return 0;
+  }
+
+  fakeDC = GetDC(fakeWND);
+
+  fakePFD.nSize = sizeof(fakePFD);
+  fakePFD.nVersion = 1;
+  fakePFD.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  fakePFD.iPixelType = PFD_TYPE_RGBA;
+  fakePFD.cColorBits = 32;
+  fakePFD.cAlphaBits = 8;
+  fakePFD.cDepthBits = 24;
+
+  fakePFDID = ChoosePixelFormat(fakeDC, &fakePFD);
+
+  if (!fakePFDID || !SetPixelFormat(fakeDC, fakePFDID, &fakePFD))
+  {
+    return 0;
+  }
+
+  fakeRC = wglCreateContext(fakeDC);
+
+  if (!fakeRC || !wglMakeCurrent(fakeDC, fakeRC))
+  {
+    return 0;
+  }
+
+  windowStyle = WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
+
+  rect.right = (i32)state->window_width;
+  rect.bottom = (i32)state->window_height;
+  AdjustWindowRect(&rect, windowStyle, 0);
+
+  state->window_handle = CreateWindowExA(
+      0,
+      windowClass.lpszClassName,
+      windowClass.lpszClassName,
+      windowStyle,
+      0, 0,
+      (i32)state->window_width, (i32)state->window_height,
+      0, 0,
+      instance,
+      state /* Pass pointer to user data to the window callback */
+  );
+
+  state->dc = GetDC(state->window_handle);
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4068)
+#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+  /* Core WGL functions */
+  wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
+  wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+  wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+
+  if (!wglChoosePixelFormatARB || !wglCreateContextAttribsARB)
+  {
+    win32_print("[opengl] required WGL extensions 'wglChoosePixelFormatARB', 'wglCreateContextAttribsARB' missing!\n");
+    return 0;
+  }
+
+  /* OpenGL functions that are not part of the opengl32 lib */
+  glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
+  glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
+  glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
+  glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
+  glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
+  glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
+  glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
+  glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
+  glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
+  glGetProgramiv = (PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv");
+  glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog");
+  glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
+  glDrawArrays = (PFNGLDRAWARRAYSPROC)wglGetProcAddress("glDrawArrays");
+  glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
+  glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)wglGetProcAddress("glGenVertexArrays");
+  glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
+  glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
+  glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
+  glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
+  glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
+
+#pragma GCC diagnostic pop
+
+  /* Set Pixel Format */
+  {
+    i32 pixelFormatID;
+    u32 numFormats;
+
+    if (!wglChoosePixelFormatARB(state->dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
+    {
+      return 0;
+    }
+
+    SetPixelFormat(state->dc, pixelFormatID, 0);
+  }
+
+  /* Create the OpenGL context */
+  {
+    void *rc = wglCreateContextAttribsARB(state->dc, 0, contextAttribs);
+
+    wglMakeCurrent(0, 0);
+    wglDeleteContext(fakeRC);
+    ReleaseDC(fakeWND, fakeDC);
+    DestroyWindow(fakeWND);
+
+    if (!rc || !wglMakeCurrent(state->dc, rc))
+    {
+      return 0;
+    }
+  }
+
+  /* Disable VSync */
+  if (wglSwapIntervalEXT)
+  {
+    wglSwapIntervalEXT(0);
+  }
+
+  /* Print opengl information */
+  win32_print("[opengl] vendor  : ");
+  win32_print((s8 *)glGetString(GL_VENDOR));
+  win32_print("\n");
+
+  win32_print("[opengl] renderer: ");
+  win32_print((s8 *)glGetString(GL_RENDERER));
+  win32_print("\n");
+
+  win32_print("[opengl] version : ");
+  win32_print((s8 *)glGetString(GL_VERSION));
+  win32_print("\n");
+
+  glViewport(0, 0, (i32)state->window_width, (i32)state->window_height);
+  glClearColor(state->window_clear_color_r, state->window_clear_color_g, state->window_clear_color_b, state->window_clear_color_a);
+
+  return 1;
+}
+
 SHADE_IT_API i32 opengl_shader_compile(
     s8 *shaderCode,
     u32 shaderType)
@@ -843,219 +1042,30 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   /* Window and OpenGL context  */
   /******************************/
+  if (!opengl_create_context(&state))
   {
-    void *instance = GetModuleHandleA(0);
-    WNDCLASSA windowClass = {0};
+    win32_print("[opengl] Could not create opengl context!\n");
+    return 1;
+  }
 
-    void *fakeWND;
-    void *fakeDC;
-    i32 fakePFDID;
-    void *fakeRC;
+  /* Avoid clear color flickering */
+  glDisable(GL_FRAMEBUFFER_SRGB);
+  glDisable(GL_MULTISAMPLE);
+  glClear(GL_COLOR_BUFFER_BIT);
 
-    u32 windowStyle;
+  SwapBuffers(state.dc);
 
-    PIXELFORMATDESCRIPTOR fakePFD = {0};
-    RECT rect = {0};
+  /* Make the window visible */
+  ShowWindow(state.window_handle, SW_SHOW);
 
-    i32 pixelAttribs[] = {
-        WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-        WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-        WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-        WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-        WGL_COLOR_BITS_ARB, 32,
-        WGL_ALPHA_BITS_ARB, 8,
-        WGL_DEPTH_BITS_ARB, 24,
-        WGL_STENCIL_BITS_ARB, 8,
-        0};
+  {
+    /* Generate a dummy vao with no buffer */
+    u32 vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
-    i32 contextAttribs[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-        WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-        0};
-
-    windowClass.style = CS_OWNDC;
-    windowClass.lpfnWndProc = win32_window_callback;
-    windowClass.hInstance = instance;
-    windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
-    windowClass.hIcon = LoadIconA(instance, MAKEINTRESOURCEA(1));
-    windowClass.hbrBackground = 0;
-    windowClass.lpszClassName = state.window_title;
-
-    if (!RegisterClassA(&windowClass))
-    {
-      return 1;
-    }
-
-    fakeWND = CreateWindowExA(
-        0,
-        windowClass.lpszClassName,
-        windowClass.lpszClassName,
-        WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-        0, 0,
-        1, 1,
-        0, 0,
-        instance, 0);
-
-    if (!fakeWND)
-    {
-      return 1;
-    }
-
-    fakeDC = GetDC(fakeWND);
-
-    fakePFD.nSize = sizeof(fakePFD);
-    fakePFD.nVersion = 1;
-    fakePFD.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    fakePFD.iPixelType = PFD_TYPE_RGBA;
-    fakePFD.cColorBits = 32;
-    fakePFD.cAlphaBits = 8;
-    fakePFD.cDepthBits = 24;
-
-    fakePFDID = ChoosePixelFormat(fakeDC, &fakePFD);
-
-    if (!fakePFDID || !SetPixelFormat(fakeDC, fakePFDID, &fakePFD))
-    {
-      return 1;
-    }
-
-    fakeRC = wglCreateContext(fakeDC);
-
-    if (!fakeRC || !wglMakeCurrent(fakeDC, fakeRC))
-    {
-      return 1;
-    }
-
-    windowStyle = WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
-
-    rect.right = (i32)state.window_width;
-    rect.bottom = (i32)state.window_height;
-    AdjustWindowRect(&rect, windowStyle, 0);
-
-    state.window_handle = CreateWindowExA(
-        0,
-        windowClass.lpszClassName,
-        windowClass.lpszClassName,
-        windowStyle,
-        0, 0,
-        (i32)state.window_width, (i32)state.window_height,
-        0, 0,
-        instance,
-        &state /* Pass pointer to user data to the window callback */
-    );
-
-    state.dc = GetDC(state.window_handle);
-
-#ifdef _MSC_VER
-#pragma warning(disable : 4068)
-#endif
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-function-type"
-    /* Core WGL functions */
-    wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-    wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-
-    if (!wglChoosePixelFormatARB || !wglCreateContextAttribsARB)
-    {
-      win32_print("[opengl] required WGL extensions 'wglChoosePixelFormatARB', 'wglCreateContextAttribsARB' missing!\n");
-      return 1;
-    }
-
-    /* OpenGL functions that are not part of the opengl32 lib */
-    glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
-    glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
-    glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
-    glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
-    glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
-    glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
-    glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
-    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
-    glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
-    glGetProgramiv = (PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv");
-    glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog");
-    glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
-    glDrawArrays = (PFNGLDRAWARRAYSPROC)wglGetProcAddress("glDrawArrays");
-    glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
-    glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)wglGetProcAddress("glGenVertexArrays");
-    glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
-    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
-    glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
-    glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
-    glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
-
-#pragma GCC diagnostic pop
-
-    /* Set Pixel Format */
-    {
-      i32 pixelFormatID;
-      u32 numFormats;
-
-      if (!wglChoosePixelFormatARB(state.dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
-      {
-        return 1;
-      }
-
-      SetPixelFormat(state.dc, pixelFormatID, 0);
-    }
-
-    /* Create the OpenGL context */
-    {
-      void *rc = wglCreateContextAttribsARB(state.dc, 0, contextAttribs);
-
-      wglMakeCurrent(0, 0);
-      wglDeleteContext(fakeRC);
-      ReleaseDC(fakeWND, fakeDC);
-      DestroyWindow(fakeWND);
-
-      if (!rc || !wglMakeCurrent(state.dc, rc))
-      {
-        return 1;
-      }
-    }
-
-    /* Disable VSync */
-    if (wglSwapIntervalEXT)
-    {
-      wglSwapIntervalEXT(0);
-    }
-
-    /* Print opengl information */
-    win32_print("[opengl] vendor  : ");
-    win32_print((s8 *)glGetString(GL_VENDOR));
-    win32_print("\n");
-
-    win32_print("[opengl] renderer: ");
-    win32_print((s8 *)glGetString(GL_RENDERER));
-    win32_print("\n");
-
-    win32_print("[opengl] version : ");
-    win32_print((s8 *)glGetString(GL_VERSION));
-    win32_print("\n");
-
-    /* Avoid clear color flickering */
-    glDisable(GL_FRAMEBUFFER_SRGB);
-    glDisable(GL_MULTISAMPLE);
-    glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
-    glClearColor(state.window_clear_color_r, state.window_clear_color_g, state.window_clear_color_b, state.window_clear_color_a);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    SwapBuffers(state.dc);
-
-    /* Make the window visible */
-    ShowWindow(state.window_handle, SW_SHOW);
-
-    {
-      /* Generate a dummy vao with no buffer */
-      u32 vao;
-      glGenVertexArrays(1, &vao);
-      glBindVertexArray(vao);
-
-      /* Load Fragment Shader source code from file */
-      opengl_shader_load(&main_shader, fragment_shader_file_name);
-    }
+    /* Load Fragment Shader source code from file */
+    opengl_shader_load(&main_shader, fragment_shader_file_name);
   }
 
   {
