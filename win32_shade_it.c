@@ -678,105 +678,82 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
 {
-  void *instance = GetModuleHandleA(0);
-  WNDCLASSA windowClass = {0};
-
-  void *fakeWND;
-  void *fakeDC;
-  i32 fakePFDID;
-  void *fakeRC;
-
-  u32 windowStyle;
-
-  PIXELFORMATDESCRIPTOR fakePFD = {0};
+  void *window_instance = GetModuleHandleA(0);
+  WNDCLASSA window_class = {0};
+  u32 window_style = WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
   RECT rect = {0};
 
-  i32 pixelAttribs[] = {
-      WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-      WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-      WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-      WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-      WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-      WGL_COLOR_BITS_ARB, 32,
-      WGL_ALPHA_BITS_ARB, 8,
-      WGL_DEPTH_BITS_ARB, 24,
-      WGL_STENCIL_BITS_ARB, 8,
-      0};
+  void *fake_window;
+  void *fake_device_context;
+  void *fake_rc;
+  i32 fake_pixel_format;
+  PIXELFORMATDESCRIPTOR fake_pfd = {0};
 
-  i32 contextAttribs[] = {
-      WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-      WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-      WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-      WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-      0};
+  window_class.style = CS_OWNDC;
+  window_class.lpfnWndProc = win32_window_callback;
+  window_class.hInstance = window_instance;
+  window_class.hCursor = LoadCursorA(0, IDC_ARROW);
+  window_class.hIcon = LoadIconA(window_instance, MAKEINTRESOURCEA(1));
+  window_class.hbrBackground = 0;
+  window_class.lpszClassName = state->window_title;
 
-  windowClass.style = CS_OWNDC;
-  windowClass.lpfnWndProc = win32_window_callback;
-  windowClass.hInstance = instance;
-  windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
-  windowClass.hIcon = LoadIconA(instance, MAKEINTRESOURCEA(1));
-  windowClass.hbrBackground = 0;
-  windowClass.lpszClassName = state->window_title;
-
-  if (!RegisterClassA(&windowClass))
+  if (!RegisterClassA(&window_class))
   {
     return 0;
   }
 
-  fakeWND = CreateWindowExA(
+  fake_window = CreateWindowExA(
       0,
-      windowClass.lpszClassName,
-      windowClass.lpszClassName,
+      window_class.lpszClassName,
+      window_class.lpszClassName,
       WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
       0, 0,
       1, 1,
       0, 0,
-      instance, 0);
+      window_instance, 0);
 
-  if (!fakeWND)
+  if (!fake_window)
   {
     return 0;
   }
 
-  fakeDC = GetDC(fakeWND);
+  fake_device_context = GetDC(fake_window);
 
-  fakePFD.nSize = sizeof(fakePFD);
-  fakePFD.nVersion = 1;
-  fakePFD.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-  fakePFD.iPixelType = PFD_TYPE_RGBA;
-  fakePFD.cColorBits = 32;
-  fakePFD.cAlphaBits = 8;
-  fakePFD.cDepthBits = 24;
+  fake_pfd.nSize = sizeof(fake_pfd);
+  fake_pfd.nVersion = 1;
+  fake_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  fake_pfd.iPixelType = PFD_TYPE_RGBA;
+  fake_pfd.cColorBits = 32;
+  fake_pfd.cAlphaBits = 8;
+  fake_pfd.cDepthBits = 24;
 
-  fakePFDID = ChoosePixelFormat(fakeDC, &fakePFD);
+  fake_pixel_format = ChoosePixelFormat(fake_device_context, &fake_pfd);
 
-  if (!fakePFDID || !SetPixelFormat(fakeDC, fakePFDID, &fakePFD))
+  if (!fake_pixel_format || !SetPixelFormat(fake_device_context, fake_pixel_format, &fake_pfd))
   {
     return 0;
   }
 
-  fakeRC = wglCreateContext(fakeDC);
+  fake_rc = wglCreateContext(fake_device_context);
 
-  if (!fakeRC || !wglMakeCurrent(fakeDC, fakeRC))
+  if (!fake_rc || !wglMakeCurrent(fake_device_context, fake_rc))
   {
     return 0;
   }
-
-  windowStyle = WS_CAPTION | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
 
   rect.right = (i32)state->window_width;
   rect.bottom = (i32)state->window_height;
-  AdjustWindowRect(&rect, windowStyle, 0);
+  AdjustWindowRect(&rect, window_style, 0);
 
   state->window_handle = CreateWindowExA(
       0,
-      windowClass.lpszClassName,
-      windowClass.lpszClassName,
-      windowStyle,
+      window_class.lpszClassName,
+      window_class.lpszClassName,
+      window_style,
       0, 0,
       (i32)state->window_width, (i32)state->window_height,
       0, 0,
-      instance,
+      window_instance,
       state /* Pass pointer to user data to the window callback */
   );
 
@@ -824,25 +801,45 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
 
   /* Set Pixel Format */
   {
-    i32 pixelFormatID;
-    u32 numFormats;
 
-    if (!wglChoosePixelFormatARB(state->dc, pixelAttribs, 0, 1, &pixelFormatID, &numFormats) || !numFormats)
+    i32 pixel_attributes[] = {
+        WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+        WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+        WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+        WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+        WGL_COLOR_BITS_ARB, 32,
+        WGL_ALPHA_BITS_ARB, 8,
+        WGL_DEPTH_BITS_ARB, 24,
+        WGL_STENCIL_BITS_ARB, 8,
+        0};
+
+    i32 pixel_format_id;
+    u32 num_formats;
+
+    if (!wglChoosePixelFormatARB(state->dc, pixel_attributes, 0, 1, &pixel_format_id, &num_formats) || !num_formats)
     {
       return 0;
     }
 
-    SetPixelFormat(state->dc, pixelFormatID, 0);
+    SetPixelFormat(state->dc, pixel_format_id, 0);
   }
 
   /* Create the OpenGL context */
   {
-    void *rc = wglCreateContextAttribsARB(state->dc, 0, contextAttribs);
+    i32 context_attributes[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0};
+
+    void *rc = wglCreateContextAttribsARB(state->dc, 0, context_attributes);
 
     wglMakeCurrent(0, 0);
-    wglDeleteContext(fakeRC);
-    ReleaseDC(fakeWND, fakeDC);
-    DestroyWindow(fakeWND);
+    wglDeleteContext(fake_rc);
+    ReleaseDC(fake_window, fake_device_context);
+    DestroyWindow(fake_window);
 
     if (!rc || !wglMakeCurrent(state->dc, rc))
     {
@@ -1027,10 +1024,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     fragment_shader_file_name = (s8 *)argv[1];
   }
 
-  win32_print("[opengl] load shader file: ");
-  win32_print(fragment_shader_file_name);
-  win32_print("\n");
-
   state.running = 1;
   state.window_title = "shade_it v0.5";
   state.window_width = 800;
@@ -1065,6 +1058,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     glBindVertexArray(vao);
 
     /* Load Fragment Shader source code from file */
+    win32_print("[opengl] load shader file: ");
+    win32_print(fragment_shader_file_name);
+    win32_print("\n");
+
     opengl_shader_load(&main_shader, fragment_shader_file_name);
   }
 
