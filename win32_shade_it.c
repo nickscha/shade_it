@@ -612,6 +612,8 @@ typedef struct win32_shade_it_state
   u8 window_minimized;
   u8 window_size_changed;
 
+  s8 *window_title;
+
   void *window_handle;
   void *dc;
 
@@ -831,6 +833,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   win32_print("\n");
 
   state.running = 1;
+  state.window_title = "shade_it v0.5";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
@@ -879,7 +882,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     windowClass.hCursor = LoadCursorA(0, IDC_ARROW);
     windowClass.hIcon = LoadIconA(instance, MAKEINTRESOURCEA(1));
     windowClass.hbrBackground = 0;
-    windowClass.lpszClassName = "shade_it v0.5";
+    windowClass.lpszClassName = state.window_title;
 
     if (!RegisterClassA(&windowClass))
     {
