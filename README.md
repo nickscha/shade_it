@@ -14,6 +14,9 @@ A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL S
   <a href="https://github.com/nickscha/shade_it/releases">
     <img src="https://img.shields.io/github/v/release/nickscha/shade_it?style=flat-square&color=blue" alt="Latest Release">
   </a>
+  <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it.exe">
+    <img src="https://img.shields.io/badge/Windows%20x64-blue?style=flat-square" alt="Windows x64">
+  </a>
   <a href="https://github.com/nickscha/shade_it/releases">
     <img src="https://img.shields.io/github/downloads/nickscha/shade_it/total?style=flat-square&color=brightgreen" alt="Downloads">
   </a>
