@@ -40,6 +40,7 @@ typedef char s8;
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
+typedef short i16;
 typedef int i32;
 typedef float f32;
 typedef double f64;
@@ -48,6 +49,7 @@ typedef double f64;
 TYPES_STATIC_ASSERT(sizeof(s8) == 1, s8_size_must_be_1);
 TYPES_STATIC_ASSERT(sizeof(u8) == 1, u8_size_must_be_1);
 TYPES_STATIC_ASSERT(sizeof(u16) == 2, u16_size_must_be_2);
+TYPES_STATIC_ASSERT(sizeof(i16) == 2, i16_size_must_be_2);
 TYPES_STATIC_ASSERT(sizeof(u32) == 4, u32_size_must_be_4);
 TYPES_STATIC_ASSERT(sizeof(i32) == 4, i32_size_must_be_4);
 TYPES_STATIC_ASSERT(sizeof(f32) == 4, f32_size_must_be_4);
@@ -579,7 +581,7 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
 
   if (shcore)
   {
-    typedef long(__stdcall * SetProcessDpiAwarenessProc)(i32);
+    typedef i32(__stdcall * SetProcessDpiAwarenessProc)(i32);
     SetProcessDpiAwarenessProc setDpiAwareness;
 
     *(void **)(&setDpiAwareness) = GetProcAddress(shcore, "SetProcessDpiAwareness");
@@ -605,6 +607,120 @@ typedef struct win32_key_state
   u8 was_down;
 
 } win32_key_state;
+
+typedef struct win32_controller_state
+{
+
+  u8 button_a;
+  u8 button_b;
+  u8 button_x;
+  u8 button_y;
+
+  u8 shoulder_left;
+  u8 shoulder_right;
+
+  u8 trigger_left;
+  u8 trigger_right;
+
+  u8 dpad_up;
+  u8 dpad_down;
+  u8 dpad_left;
+  u8 dpad_right;
+
+  u8 stick_left;
+  u8 stick_right;
+
+  u8 start;
+  u8 back;
+
+  f32 stick_left_x;
+  f32 stick_left_y;
+  f32 stick_right_x;
+  f32 stick_right_y;
+
+  f32 trigger_left_value;
+  f32 trigger_right_value;
+
+} win32_controller_state;
+
+#define XINPUT_GAMEPAD_DPAD_UP 0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN 0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT 0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT 0x0008
+#define XINPUT_GAMEPAD_START 0x0010
+#define XINPUT_GAMEPAD_BACK 0x0020
+#define XINPUT_GAMEPAD_LEFT_THUMB 0x0040
+#define XINPUT_GAMEPAD_RIGHT_THUMB 0x0080
+#define XINPUT_GAMEPAD_LEFT_SHOULDER 0x0100
+#define XINPUT_GAMEPAD_RIGHT_SHOULDER 0x0200
+#define XINPUT_GAMEPAD_A 0x1000
+#define XINPUT_GAMEPAD_B 0x2000
+#define XINPUT_GAMEPAD_X 0x4000
+#define XINPUT_GAMEPAD_Y 0x8000
+#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE 7849
+#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
+#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD 30
+
+typedef struct XINPUT_GAMEPAD
+{
+  u16 wButtons;
+  u8 bLeftTrigger;
+  u8 bRightTrigger;
+  i16 sThumbLX;
+  i16 sThumbLY;
+  i16 sThumbRX;
+  i16 sThumbRY;
+} XINPUT_GAMEPAD, *PXINPUT_GAMEPAD;
+
+typedef struct XINPUT_STATE
+{
+  u32 dwPacketNumber;
+  XINPUT_GAMEPAD Gamepad;
+} XINPUT_STATE, *PXINPUT_STATE;
+
+typedef u32(__stdcall *XInputGetStateFunc)(u32 dwUserIndex, XINPUT_STATE *pState);
+static XInputGetStateFunc XInputGetState = 0;
+
+SHADE_IT_API i32 win32_load_xinput(void)
+{
+  void *xinput_lib = LoadLibraryA("xinput1_4.dll");
+
+  if (!xinput_lib)
+  {
+    xinput_lib = LoadLibraryA("xinput1_3.dll");
+  }
+
+  if (!xinput_lib)
+  {
+    xinput_lib = LoadLibraryA("xinput9_1_0.dll");
+  }
+
+  if (!xinput_lib)
+  {
+    return 0;
+  }
+
+  *(void **)(&XInputGetState) = GetProcAddress(xinput_lib, "XInputGetState");
+
+  return 1;
+}
+
+SHADE_IT_API f32 win32_process_thumbstick(i16 value, i16 deadzone)
+{
+  f32 result = 0.0f;
+
+  if (value > deadzone)
+    result = (f32)(value - deadzone) / (32767.0f - deadzone);
+  else if (value < -deadzone)
+    result = (f32)(value + deadzone) / (32768.0f - deadzone);
+
+  return result;
+}
+
+SHADE_IT_API SHADE_IT_INLINE f32 win32_process_trigger(u8 value)
+{
+  return value > XINPUT_GAMEPAD_TRIGGER_THRESHOLD ? (f32)value / 255.0f : 0.0f;
+}
 
 typedef struct win32_shade_it_state
 {
@@ -639,6 +755,7 @@ typedef struct win32_shade_it_state
   i32 mouse_x;  /* Mouse position on screen for x */
   i32 mouse_y;  /* Mouse position on screen for y */
   win32_key_state keys[KEYS_COUNT];
+  win32_controller_state controller;
 
 } win32_shade_it_state;
 
@@ -1125,6 +1242,14 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   win32_enable_dpi_awareness();
 
   /******************************/
+  /* Load XInput Controller     */
+  /******************************/
+  if (!win32_load_xinput())
+  {
+    win32_print("[win32] Could not load XInput library!\n");
+  }
+
+  /******************************/
   /* Window and OpenGL context  */
   /******************************/
   if (!opengl_create_context(&state))
@@ -1245,6 +1370,41 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         state.mouse_x = p.x;
         state.mouse_y = (i32)state.window_height - 1 - p.y;
+      }
+
+      /* Get XInput controller */
+      if (XInputGetState)
+      {
+        XINPUT_STATE xinput_state = {0};
+        u32 controller_index = 0;
+        u32 result = XInputGetState(controller_index, &xinput_state);
+
+        if (result == 0)
+        {
+          XINPUT_GAMEPAD *gp = &xinput_state.Gamepad;
+          state.controller.button_a = (gp->wButtons & XINPUT_GAMEPAD_A) ? 1 : 0;
+          state.controller.button_b = (gp->wButtons & XINPUT_GAMEPAD_B) ? 1 : 0;
+          state.controller.button_x = (gp->wButtons & XINPUT_GAMEPAD_X) ? 1 : 0;
+          state.controller.button_y = (gp->wButtons & XINPUT_GAMEPAD_Y) ? 1 : 0;
+          state.controller.shoulder_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1 : 0;
+          state.controller.shoulder_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1 : 0;
+          state.controller.dpad_up = (gp->wButtons & XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0;
+          state.controller.dpad_down = (gp->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0;
+          state.controller.dpad_left = (gp->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0;
+          state.controller.dpad_right = (gp->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0;
+          state.controller.start = (gp->wButtons & XINPUT_GAMEPAD_START) ? 1 : 0;
+          state.controller.back = (gp->wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0;
+          state.controller.stick_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
+          state.controller.stick_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
+          state.controller.trigger_left_value = win32_process_trigger(gp->bLeftTrigger);
+          state.controller.trigger_right_value = win32_process_trigger(gp->bRightTrigger);
+          state.controller.trigger_left = state.controller.trigger_left_value > 0.0f ? 1 : 0;
+          state.controller.trigger_right = state.controller.trigger_right_value > 0.0f ? 1 : 0;
+          state.controller.stick_left_x = win32_process_thumbstick(gp->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+          state.controller.stick_left_y = win32_process_thumbstick(gp->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+          state.controller.stick_right_x = win32_process_thumbstick(gp->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+          state.controller.stick_right_y = win32_process_thumbstick(gp->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+        }
       }
 
       /******************************/
