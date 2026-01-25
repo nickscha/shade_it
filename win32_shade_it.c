@@ -670,13 +670,13 @@ typedef struct XINPUT_GAMEPAD
   i16 sThumbLY;
   i16 sThumbRX;
   i16 sThumbRY;
-} XINPUT_GAMEPAD, *PXINPUT_GAMEPAD;
+} XINPUT_GAMEPAD;
 
 typedef struct XINPUT_STATE
 {
   u32 dwPacketNumber;
   XINPUT_GAMEPAD Gamepad;
-} XINPUT_STATE, *PXINPUT_STATE;
+} XINPUT_STATE;
 
 typedef u32(__stdcall *XInputGetStateFunc)(u32 dwUserIndex, XINPUT_STATE *pState);
 static XInputGetStateFunc XInputGetState = 0;
