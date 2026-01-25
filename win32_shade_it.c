@@ -90,6 +90,7 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define WM_CLOSE 0x0010
 #define WM_QUIT 0x0012
 #define WM_SIZE 0x0005
+#define WM_INPUT 0x00FF
 
 #define SIZE_MINIMIZED 1
 
@@ -116,6 +117,12 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 
 #define MAKEINTRESOURCEA(i) ((s8 *)((u32)((u16)(i))))
 #define IDC_ARROW MAKEINTRESOURCEA(32512)
+
+#define RIDEV_INPUTSINK 0x00000100
+#define RID_INPUT 0x10000003
+#define RIM_TYPEMOUSE 0
+#define RIM_TYPEKEYBOARD 1
+#define RI_KEY_BREAK 1
 
 typedef void *(*PROC)(void);
 typedef i64 (*WNDPROC)(void *, u32, u64, i64);
@@ -221,6 +228,61 @@ typedef struct WIN32_FILE_ATTRIBUTE_DATA
   u32 nFileSizeLow;
 } WIN32_FILE_ATTRIBUTE_DATA;
 
+typedef struct RAWINPUTDEVICE
+{
+  u16 usUsagePage;
+  u16 usUsage;
+  u32 dwFlags;
+  void *hwndTarget;
+} RAWINPUTDEVICE;
+
+typedef struct RAWINPUTHEADER
+{
+  u32 dwType;
+  u32 dwSize;
+  void *hDevice;
+  u64 wParam;
+} RAWINPUTHEADER;
+
+typedef struct RAWKEYBOARD
+{
+  u16 MakeCode;
+  u16 Flags;
+  u16 Reserved;
+  u16 VKey;
+  u32 Message;
+  u32 ExtraInformation;
+} RAWKEYBOARD;
+
+typedef struct RAWMOUSE
+{
+  u16 usFlags;
+  u16 usButtonFlags;
+  u16 usButtonData;
+  u32 ulRawButtons;
+  i32 lLastX;
+  i32 lLastY;
+  u32 ulExtraInformation;
+} RAWMOUSE;
+
+typedef struct RAWHID
+{
+  u32 dwSizeHid;
+  u32 dwCount;
+  u8 bRawData[1];
+} RAWHID;
+
+typedef struct RAWINPUT
+{
+  RAWINPUTHEADER header;
+  union
+  {
+    RAWMOUSE mouse;
+    RAWKEYBOARD keyboard;
+    RAWHID hid;
+  } data;
+} RAWINPUT;
+
 /* clang-format off */
 WIN32_API(void *) GetStdHandle(u32 nStdHandle);
 WIN32_API(i32)    CloseHandle(void *hObject);
@@ -262,6 +324,10 @@ WIN32_API(i32)    AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
 WIN32_API(i32)    QueryPerformanceCounter(i64 *lpPerformanceCount);
 WIN32_API(i32)    QueryPerformanceFrequency(i64 *lpFrequency);
 WIN32_API(s8 *)   GetCommandLineA(void);
+WIN32_API(i32)    RegisterRawInputDevices(RAWINPUTDEVICE* pRawInputDevices, u32 uiNumDevices, u32 cbSize);
+WIN32_API(u32)    GetRawInputData(void *hRawInput, u32 uiCommand, void *pData, u32 *pcbSize, u32 cbSizeHeader);
+WIN32_API(i32)    GetCursorPos(POINT *lpPoint);
+WIN32_API(i32)    ScreenToClient(void *hWnd, POINT *lpPoint);
 
 /* WGL */
 WIN32_API(void *) wglCreateContext(void *unnamedParam1);
@@ -386,10 +452,26 @@ static PFNGLUNIFORM1IPROC glUniform1i;
 typedef void (*PFNGLUNIFORM3FPROC)(i32 location, f32 v0, f32 v1, f32 v2);
 static PFNGLUNIFORM3FPROC glUniform3f;
 
+typedef void (*PFNGLUNIFORM4FPROC)(i32 location, f32 v0, f32 v1, f32 v2, f32 v3);
+static PFNGLUNIFORM4FPROC glUniform4f;
+
 /* #############################################################################
  * # Main Code
  * #############################################################################
  */
+#ifdef _MSC_VER
+#pragma function(memset)
+#endif
+void *memset(void *dest, int c, unsigned int count)
+{
+  char *bytes = (char *)dest;
+  while (count--)
+  {
+    *bytes++ = (char)c;
+  }
+  return dest;
+}
+
 SHADE_IT_API void win32_print(s8 *str)
 {
   static u32 written;
@@ -491,6 +573,39 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
   return GetFileAttributesExA(file, 0, &fad) ? fad.ftLastWriteTime : empty;
 }
 
+SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
+{
+  void *shcore = LoadLibraryA("Shcore.dll");
+
+  if (shcore)
+  {
+    typedef long(__stdcall * SetProcessDpiAwarenessProc)(i32);
+    SetProcessDpiAwarenessProc setDpiAwareness;
+
+    *(void **)(&setDpiAwareness) = GetProcAddress(shcore, "SetProcessDpiAwareness");
+
+    if (setDpiAwareness)
+    {
+      setDpiAwareness(2); /* PROCESS_PER_MONITOR_DPI_AWARE */
+    }
+
+    FreeLibrary(shcore);
+  }
+  else
+  {
+    SetProcessDPIAware();
+  }
+}
+
+#define KEYS_COUNT 256
+
+typedef struct win32_key_state
+{
+  u8 isDown;
+  u8 wasDown;
+
+} win32_key_state;
+
 typedef struct win32_shade_it_state
 {
 
@@ -518,6 +633,13 @@ typedef struct win32_shade_it_state
   void *window_handle;
   void *dc;
 
+  /* Input state */
+  i32 mouse_dx; /* Relative movement delta for x  */
+  i32 mouse_dy; /* Relative movement delta for y  */
+  i32 mouse_x;  /* Mouse position on screen for x */
+  i32 mouse_y;  /* Mouse position on screen for y */
+  win32_key_state keys[KEYS_COUNT];
+
 } win32_shade_it_state;
 
 SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message, u64 wParam, i64 lParam)
@@ -535,6 +657,25 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     CREATESTRUCTA *cs = (CREATESTRUCTA *)lParam;
     state = (win32_shade_it_state *)cs->lpCreateParams;
     SetWindowLongPtrA(window, GWLP_USERDATA, (i64)state);
+
+    {
+      RAWINPUTDEVICE rid[2] = {0};
+
+      rid[0].usUsagePage = 0x01;
+      rid[0].usUsage = 0x06;            /* Keyboard */
+      rid[0].dwFlags = RIDEV_INPUTSINK; /* Receive input even when not focused */
+      rid[0].hwndTarget = window;
+
+      rid[1].usUsagePage = 0x01;
+      rid[1].usUsage = 0x02; /* Mouse */
+      rid[1].dwFlags = RIDEV_INPUTSINK;
+      rid[1].hwndTarget = window;
+
+      if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0])))
+      {
+        win32_print("[win32] Failed to register RAWINPUT device\n");
+      }
+    }
   }
   break;
   case WM_CLOSE:
@@ -567,6 +708,45 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     }
   }
   break;
+  case WM_INPUT:
+  {
+    u32 dwSize = 0;
+    static u8 rawBuffer[128];
+    RAWINPUT *raw = (RAWINPUT *)rawBuffer;
+
+    GetRawInputData((RAWINPUT *)lParam, RID_INPUT, (void *)0, &dwSize, sizeof(RAWINPUTHEADER));
+
+    if (dwSize > sizeof(rawBuffer) ||
+        GetRawInputData((RAWINPUT *)lParam, RID_INPUT, raw, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+    {
+      return result;
+    }
+
+    if (raw->header.dwType == RIM_TYPEKEYBOARD)
+    {
+      RAWKEYBOARD *keyboard = &raw->data.keyboard;
+
+      u16 vKey = keyboard->VKey;
+
+      if (vKey < KEYS_COUNT)
+      {
+        win32_key_state *key = &state->keys[vKey];
+        key->wasDown = key->isDown;
+        key->isDown = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
+      }
+    }
+    else if (raw->header.dwType == RIM_TYPEMOUSE)
+    {
+      RAWMOUSE *mouse = &raw->data.mouse;
+
+      i32 dx = mouse->lLastX;
+      i32 dy = mouse->lLastY;
+
+      state->mouse_dx = dx;
+      state->mouse_dy = dy;
+    }
+  }
+  break;
   default:
   {
     result = DefWindowProcA(window, message, wParam, lParam);
@@ -575,30 +755,6 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   }
 
   return (result);
-}
-
-SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
-{
-  void *shcore = LoadLibraryA("Shcore.dll");
-
-  if (shcore)
-  {
-    typedef long(__stdcall * SetProcessDpiAwarenessProc)(int);
-    SetProcessDpiAwarenessProc setDpiAwareness;
-
-    *(void **)(&setDpiAwareness) = GetProcAddress(shcore, "SetProcessDpiAwareness");
-
-    if (setDpiAwareness)
-    {
-      setDpiAwareness(2); /* PROCESS_PER_MONITOR_DPI_AWARE */
-    }
-
-    FreeLibrary(shcore);
-  }
-  else
-  {
-    SetProcessDPIAware();
-  }
 }
 
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
@@ -721,6 +877,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
   glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
   glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
+  glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
 
 #pragma GCC diagnostic pop
 
@@ -879,6 +1036,7 @@ typedef struct shade_it_shader
   i32 loc_iTimeDelta;
   i32 loc_iFrame;
   i32 loc_iFrameRate;
+  i32 loc_iMouse;
 
 } shade_it_shader;
 
@@ -924,6 +1082,7 @@ SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_na
     shader->loc_iTimeDelta = glGetUniformLocation(shader->program, "iTimeDelta");
     shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
     shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
+    shader->loc_iMouse = glGetUniformLocation(shader->program, "iMouse");
 
     shader->created = 1;
 
@@ -1080,6 +1239,23 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         }
       }
 
+      /* Get current frames mouse position */
+      {
+        POINT p;
+        GetCursorPos(&p);
+        ScreenToClient(state.window_handle, &p);
+
+        state.mouse_x = p.x;
+        state.mouse_y = (i32)state.window_height - 1 - p.y;
+      }
+
+      /* TODO(nickscha): when return button is pressed end program
+      if (state.keys[0x0D].isDown && !state.keys[0x0D].wasDown)
+      {
+        state.running = 0;
+      }
+      */
+
       /******************************/
       /* Rendering                  */
       /******************************/
@@ -1094,6 +1270,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
       glUniform1i(main_shader.loc_iFrame, state.iFrame);
       glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
+      glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, 1.0f, 1.0f);
       glDrawArrays(GL_TRIANGLES, 0, 3);
       SwapBuffers(state.dc);
 

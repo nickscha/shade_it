@@ -80,6 +80,7 @@ uniform float iTime;       // time elapsed in seconds
 uniform float iTimeDelta;  // render time in seconds
 uniform int   iFrame;      // total frame counter
 uniform float iFrameRate;  // current frames per second
+uniform vec4  iMouse;      // mouse position (x,y)
 
 void mainImage(out vec4 outColor, in vec2 fragCoord)
 {

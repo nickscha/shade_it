@@ -9,6 +9,7 @@ uniform float iTime;
 uniform float iTimeDelta;
 uniform int   iFrame;
 uniform float iFrameRate;
+uniform vec4  iMouse;
 
 float hash(vec2 p)
 {
@@ -66,6 +67,22 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
     /* Color */
     vec3 col = vec3(0.15, 0.3, 0.6);
     col = mix(col, vec3(0.9, 0.95, 1.0), n);
+
+    /* Mouse visualization */
+    if (iMouse.x >= 0.0)
+    {
+        vec2 mouse = iMouse.xy;
+
+        /* distance in pixels */
+        float d = length(fragCoord - mouse);
+
+        /* soft dot */
+        float dotMask = exp(-d * 0.08);
+
+        vec3 mouseCol = vec3(1.0, 0.2, 0.1);   /* red/orange */
+
+        col += mouseCol * dotMask * 1.2;
+    }
 
     outColor = vec4(col, 1.0);
 }
