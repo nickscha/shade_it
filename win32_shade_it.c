@@ -944,7 +944,7 @@ SHADE_IT_API i32 opengl_shader_create(
   return 1;
 }
 
-typedef struct shader
+typedef struct shade_it_shader
 {
   u32 created;
   u32 program;
@@ -955,9 +955,9 @@ typedef struct shader
   i32 loc_iFrame;
   i32 loc_iFrameRate;
 
-} shader;
+} shade_it_shader;
 
-SHADE_IT_API void opengl_shader_load(shader *shader, s8 *shader_file_name)
+SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_name)
 {
   static s8 *shader_code_vertex =
       "#version 330 core\n"
@@ -1017,7 +1017,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   s8 *fragment_shader_file_name = "shade_it.fs";
 
   win32_shade_it_state state = {0};
-  shader main_shader = {0};
+  shade_it_shader main_shader = {0};
 
   if (argv && argc > 1)
   {
