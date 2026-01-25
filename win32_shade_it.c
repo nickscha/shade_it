@@ -1249,13 +1249,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         state.mouse_y = (i32)state.window_height - 1 - p.y;
       }
 
-      /* TODO(nickscha): when return button is pressed end program
-      if (state.keys[0x0D].isDown && !state.keys[0x0D].wasDown)
-      {
-        state.running = 0;
-      }
-      */
-
       /******************************/
       /* Rendering                  */
       /******************************/
