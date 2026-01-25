@@ -205,11 +205,6 @@ typedef struct tagPIXELFORMATDESCRIPTOR
   u32 dwDamageMask;
 } PIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
 
-typedef struct LARGE_INTEGER
-{
-  i64 QuadPart;
-} LARGE_INTEGER;
-
 typedef struct FILETIME
 {
   u32 dwLowDateTime;
@@ -270,8 +265,8 @@ WIN32_API(i32)    DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, L
 WIN32_API(i32)    ShowWindow(void *hWnd, i32 nCmdShow);
 WIN32_API(i32)    DestroyWindow(void *hWnd);
 WIN32_API(i32)    AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
-WIN32_API(i32)    QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
-WIN32_API(i32)    QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
+WIN32_API(i32)    QueryPerformanceCounter(i64 *lpPerformanceCount);
+WIN32_API(i32)    QueryPerformanceFrequency(i64 *lpFrequency);
 WIN32_API(s8 *)   GetCommandLineA(void);
 
 /* WGL */
@@ -1009,10 +1004,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   {
-    LARGE_INTEGER perf_freq;
-    LARGE_INTEGER time_start;
-    LARGE_INTEGER time_start_fps_cap;
-    LARGE_INTEGER time_last;
+    i64 perf_freq;
+    i64 time_start;
+    i64 time_start_fps_cap;
+    i64 time_last;
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
 
@@ -1028,11 +1023,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* Timing                     */
       /******************************/
       {
-        LARGE_INTEGER time_now;
+        i64 time_now;
         QueryPerformanceCounter(&time_now);
 
-        state.iTimeDelta = (f64)(time_now.QuadPart - time_last.QuadPart) / (f64)perf_freq.QuadPart;
-        state.iTime = (f64)(time_now.QuadPart - time_start.QuadPart) / (f64)perf_freq.QuadPart;
+        state.iTimeDelta = (f64)(time_now - time_last) / (f64)perf_freq;
+        state.iTime = (f64)(time_now - time_start) / (f64)perf_freq;
 
         time_last = time_now;
 
@@ -1113,7 +1108,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       if (state.target_frames_per_second > 0)
       {
-        LARGE_INTEGER time_end;
+        i64 time_end;
 
         f64 frame_time;
         f64 remaining;
@@ -1121,7 +1116,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         QueryPerformanceCounter(&time_end);
 
-        frame_time = (f64)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (f64)perf_freq.QuadPart;
+        frame_time = (f64)(time_end - time_start_fps_cap) / (f64)perf_freq;
 
         remaining = target_frame_time - frame_time;
 
@@ -1143,7 +1138,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           {
             QueryPerformanceCounter(&time_end);
 
-            frame_time = (f64)(time_end.QuadPart - time_start_fps_cap.QuadPart) / (f64)perf_freq.QuadPart;
+            frame_time = (f64)(time_end - time_start_fps_cap) / (f64)perf_freq;
 
             if (frame_time >= target_frame_time)
             {
