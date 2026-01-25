@@ -114,8 +114,6 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define PFD_DRAW_TO_WINDOW 0x00000004
 #define PFD_TYPE_RGBA 0
 
-#define LOWORD(l) ((u16)(((u64)(l)) & 0xffff))
-#define HIWORD(l) ((u16)((((u64)(l)) >> 16) & 0xffff))
 #define MAKEINTRESOURCEA(i) ((s8 *)((u32)((u16)(i))))
 #define IDC_ARROW MAKEINTRESOURCEA(32512)
 
@@ -575,8 +573,8 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     {
       state->window_minimized = 0;
       state->window_size_changed = 1;
-      state->window_width = LOWORD(lParam);
-      state->window_height = HIWORD(lParam);
+      state->window_width = (u16)(((u64)(lParam)) & 0xffff);          /* Low Word  */
+      state->window_height = (u16)((((u64)(lParam)) >> 16) & 0xffff); /* High Word */
     }
   }
   break;
