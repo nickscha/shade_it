@@ -210,7 +210,6 @@ typedef struct tagPIXELFORMATDESCRIPTOR
 typedef struct LARGE_INTEGER
 {
   i64 QuadPart;
-
 } LARGE_INTEGER;
 
 typedef struct FILETIME
