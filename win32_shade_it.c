@@ -984,6 +984,7 @@ SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_na
 
   if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
   {
+    /* If there has been already a shader created delete the old one */
     if (shader->created)
     {
       glDeleteProgram(shader->program);
