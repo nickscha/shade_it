@@ -601,8 +601,8 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
 
 typedef struct win32_key_state
 {
-  u8 isDown;
-  u8 wasDown;
+  u8 is_down;
+  u8 was_down;
 
 } win32_key_state;
 
@@ -679,6 +679,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   }
   break;
   case WM_CLOSE:
+  case WM_QUIT:
   {
     if (!state)
     {
@@ -731,8 +732,8 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       if (vKey < KEYS_COUNT)
       {
         win32_key_state *key = &state->keys[vKey];
-        key->wasDown = key->isDown;
-        key->isDown = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
+        key->was_down = key->is_down;
+        key->is_down = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
       }
     }
     else if (raw->header.dwType == RIM_TYPEMOUSE)
@@ -1228,9 +1229,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         {
           switch (message.message)
           {
-          case WM_QUIT:
-            state.running = 0;
-            break;
           default:
             TranslateMessage(&message);
             DispatchMessageA(&message);
