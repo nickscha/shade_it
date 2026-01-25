@@ -242,6 +242,18 @@ WIN32_API(i32)
 CloseHandle(void *hObject);
 
 WIN32_API(void *)
+LoadLibraryA(s8 *lpLibFileName);
+
+WIN32_API(i32)
+FreeLibrary(void *hLibModule);
+
+WIN32_API(void *)
+GetProcAddress(void *hModule, char *lpProcName);
+
+WIN32_API(i32)
+SetProcessDPIAware(void);
+
+WIN32_API(void *)
 VirtualAlloc(void *lpAddress, u32 dwSize, u32 flAllocationType, u32 flProtect);
 
 WIN32_API(i32)
@@ -676,6 +688,30 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   return (result);
 }
 
+SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
+{
+  void *shcore = LoadLibraryA("Shcore.dll");
+
+  if (shcore)
+  {
+    typedef long(__stdcall * SetProcessDpiAwarenessProc)(int);
+    SetProcessDpiAwarenessProc setDpiAwareness;
+
+    *(void **)(&setDpiAwareness) = GetProcAddress(shcore, "SetProcessDpiAwareness");
+
+    if (setDpiAwareness)
+    {
+      setDpiAwareness(2); /* PROCESS_PER_MONITOR_DPI_AWARE */
+    }
+
+    FreeLibrary(shcore);
+  }
+  else
+  {
+    SetProcessDPIAware();
+  }
+}
+
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
 {
   void *window_instance = GetModuleHandleA(0);
@@ -1032,6 +1068,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   state.window_clear_color_r = 0.5f;
   state.window_handle = 0;
   state.dc = 0;
+
+  /******************************/
+  /* Set DPI aware mode         */
+  /******************************/
+  win32_enable_dpi_awareness();
 
   /******************************/
   /* Window and OpenGL context  */
