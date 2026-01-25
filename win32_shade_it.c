@@ -235,163 +235,64 @@ typedef enum GET_FILEEX_INFO_LEVELS
   GetFileExMaxInfoLevel
 } GET_FILEEX_INFO_LEVELS;
 
-WIN32_API(void *)
-GetStdHandle(u32 nStdHandle);
-
-WIN32_API(i32)
-CloseHandle(void *hObject);
-
-WIN32_API(void *)
-LoadLibraryA(s8 *lpLibFileName);
-
-WIN32_API(i32)
-FreeLibrary(void *hLibModule);
-
-WIN32_API(void *)
-GetProcAddress(void *hModule, char *lpProcName);
-
-WIN32_API(i32)
-SetProcessDPIAware(void);
-
-WIN32_API(void *)
-VirtualAlloc(void *lpAddress, u32 dwSize, u32 flAllocationType, u32 flProtect);
-
-WIN32_API(i32)
-VirtualFree(void *lpAddress, u32 dwSize, u32 dwFreeType);
-
-WIN32_API(void *)
-CreateFileA(s8 *lpFileName, u32 dwDesiredAccess, u32 dwShareMode, void *, u32 dwCreationDisposition, u32 dwFlagsAndAttributes, void *hTemplateFile);
-
-WIN32_API(u32)
-GetFileSize(void *hFile, u32 *lpFileSizeHigh);
-
-WIN32_API(i32)
-ReadFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToRead, u32 *lpNumberOfBytesRead, void *lpOverlapped);
-
-WIN32_API(i32)
-WriteFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToWrite, u32 *lpNumberOfBytesWritten, void *lpOverlapped);
-
-WIN32_API(i32)
-CompareFileTime(FILETIME *lpFileTime1, FILETIME *lpFileTime2);
-
-WIN32_API(i32)
-GetFileAttributesExA(s8 *lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, void *lpFileInformation);
-
-WIN32_API(void)
-Sleep(u32 dwMilliseconds);
-
-WIN32_API(void)
-ExitProcess(u32 uExitCode);
-
-WIN32_API(i32)
-PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
-
-WIN32_API(i32)
-GetMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
-
-WIN32_API(i32)
-TranslateMessage(MSG *lpMsg);
-
-WIN32_API(i64)
-DispatchMessageA(MSG *lpMsg);
-
-WIN32_API(i64)
-DefWindowProcA(void *hWnd, u32 Msg, u64 wParam, i64 lParam);
-
-WIN32_API(i64)
-SetWindowLongPtrA(void *hWnd, i32 nIndex, i64 dwNewLong);
-
-WIN32_API(i64)
-GetWindowLongPtrA(void *hWnd, i32 nIndex);
-
-WIN32_API(void *)
-GetModuleHandleA(s8 *lpModuleName);
-
-WIN32_API(void *)
-LoadCursorA(void *hInstance, s8 *lpCursorName);
-
-WIN32_API(void *)
-LoadIconA(void *hInstance, s8 *lpIconName);
-
-WIN32_API(u16)
-RegisterClassA(WNDCLASSA *lpWndClass);
-
-WIN32_API(void *)
-CreateWindowExA(u32 dwExStyle, s8 *lpClassName, s8 *lpWindowName, u32 dwStyle, i32 X, i32 Y, i32 nWidth, i32 nHeight, void *hWndParent, void *hMenu, void *hInstance, void *lpParam);
-
-WIN32_API(void *)
-GetDC(void *hWnd);
-
-WIN32_API(i32)
-ReleaseDC(void *hWnd, void *hDC);
-
-WIN32_API(i32)
-SwapBuffers(void *unnamedParam1);
-
-WIN32_API(i32)
-ChoosePixelFormat(void *hdc, PIXELFORMATDESCRIPTOR *ppfd);
-
-WIN32_API(i32)
-SetPixelFormat(void *hdc, i32 format, PIXELFORMATDESCRIPTOR *ppfd);
-
-WIN32_API(i32)
-DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
-
-WIN32_API(i32)
-ShowWindow(void *hWnd, i32 nCmdShow);
-
-WIN32_API(i32)
-DestroyWindow(void *hWnd);
-
-WIN32_API(i32)
-AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
-
-WIN32_API(i32)
-QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
-
-WIN32_API(i32)
-QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
-
-WIN32_API(s8 *)
-GetCommandLineA(void);
+/* clang-format off */
+WIN32_API(void *) GetStdHandle(u32 nStdHandle);
+WIN32_API(i32)    CloseHandle(void *hObject);
+WIN32_API(void *) LoadLibraryA(s8 *lpLibFileName);
+WIN32_API(i32)    FreeLibrary(void *hLibModule);
+WIN32_API(void *) GetProcAddress(void *hModule, char *lpProcName);
+WIN32_API(i32)    SetProcessDPIAware(void);
+WIN32_API(void *) VirtualAlloc(void *lpAddress, u32 dwSize, u32 flAllocationType, u32 flProtect);
+WIN32_API(i32)    VirtualFree(void *lpAddress, u32 dwSize, u32 dwFreeType);
+WIN32_API(void *) CreateFileA(s8 *lpFileName, u32 dwDesiredAccess, u32 dwShareMode, void *, u32 dwCreationDisposition, u32 dwFlagsAndAttributes, void *hTemplateFile);
+WIN32_API(u32)    GetFileSize(void *hFile, u32 *lpFileSizeHigh);
+WIN32_API(i32)    ReadFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToRead, u32 *lpNumberOfBytesRead, void *lpOverlapped);
+WIN32_API(i32)    WriteFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToWrite, u32 *lpNumberOfBytesWritten, void *lpOverlapped);
+WIN32_API(i32)    CompareFileTime(FILETIME *lpFileTime1, FILETIME *lpFileTime2);
+WIN32_API(i32)    GetFileAttributesExA(s8 *lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, void *lpFileInformation);
+WIN32_API(void)   Sleep(u32 dwMilliseconds);
+WIN32_API(void)   ExitProcess(u32 uExitCode);
+WIN32_API(i32)    PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
+WIN32_API(i32)    GetMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
+WIN32_API(i32)    TranslateMessage(MSG *lpMsg);
+WIN32_API(i64)    DispatchMessageA(MSG *lpMsg);
+WIN32_API(i64)    DefWindowProcA(void *hWnd, u32 Msg, u64 wParam, i64 lParam);
+WIN32_API(i64)    SetWindowLongPtrA(void *hWnd, i32 nIndex, i64 dwNewLong);
+WIN32_API(i64)    GetWindowLongPtrA(void *hWnd, i32 nIndex);
+WIN32_API(void *) GetModuleHandleA(s8 *lpModuleName);
+WIN32_API(void *) LoadCursorA(void *hInstance, s8 *lpCursorName);
+WIN32_API(void *) LoadIconA(void *hInstance, s8 *lpIconName);
+WIN32_API(u16)    RegisterClassA(WNDCLASSA *lpWndClass);
+WIN32_API(void *) CreateWindowExA(u32 dwExStyle, s8 *lpClassName, s8 *lpWindowName, u32 dwStyle, i32 X, i32 Y, i32 nWidth, i32 nHeight, void *hWndParent, void *hMenu, void *hInstance, void *lpParam);
+WIN32_API(void *) GetDC(void *hWnd);
+WIN32_API(i32)    ReleaseDC(void *hWnd, void *hDC);
+WIN32_API(i32)    SwapBuffers(void *unnamedParam1);
+WIN32_API(i32)    ChoosePixelFormat(void *hdc, PIXELFORMATDESCRIPTOR *ppfd);
+WIN32_API(i32)    SetPixelFormat(void *hdc, i32 format, PIXELFORMATDESCRIPTOR *ppfd);
+WIN32_API(i32)    DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+WIN32_API(i32)    ShowWindow(void *hWnd, i32 nCmdShow);
+WIN32_API(i32)    DestroyWindow(void *hWnd);
+WIN32_API(i32)    AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
+WIN32_API(i32)    QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
+WIN32_API(i32)    QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
+WIN32_API(s8 *)   GetCommandLineA(void);
 
 /* WGL */
-WIN32_API(void *)
-wglCreateContext(void *unnamedParam1);
-
-WIN32_API(void *)
-wglGetCurrentContext(void);
-
-WIN32_API(void *)
-wglGetCurrentDC(void);
-
-WIN32_API(i32)
-wglDeleteContext(void *unnamedParam1);
-
-WIN32_API(i32)
-wglMakeCurrent(void *unnamedParam1, void *unnamedParam2);
-
-WIN32_API(PROC)
-wglGetProcAddress(s8 *unnamedParam1);
+WIN32_API(void *) wglCreateContext(void *unnamedParam1);
+WIN32_API(void *) wglGetCurrentContext(void);
+WIN32_API(void *) wglGetCurrentDC(void);
+WIN32_API(i32)    wglDeleteContext(void *unnamedParam1);
+WIN32_API(i32)    wglMakeCurrent(void *unnamedParam1, void *unnamedParam2);
+WIN32_API(PROC)   wglGetProcAddress(s8 *unnamedParam1);
 
 /* OpenGL functions provided by win32 */
-WIN32_API(void)
-glClearColor(f32 red, f32 green, f32 blue, f32 alpha);
-
-WIN32_API(void)
-glClear(u32 mask);
-
-WIN32_API(void)
-glViewport(i32 x, i32 y, i32 width, i32 height);
-
-WIN32_API(void)
-glEnable(u32 cap);
-
-WIN32_API(void)
-glDisable(u32 cap);
-
-WIN32_API(u8 *)
-glGetString(u32 name);
+WIN32_API(void)   glClearColor(f32 red, f32 green, f32 blue, f32 alpha);
+WIN32_API(void)   glClear(u32 mask);
+WIN32_API(void)   glViewport(i32 x, i32 y, i32 width, i32 height);
+WIN32_API(void)   glEnable(u32 cap);
+WIN32_API(void)   glDisable(u32 cap);
+WIN32_API(u8 *)   glGetString(u32 name);
+/* clang-format on */
 
 /* #############################################################################
  * # OpenGL Functions not automatically provided by win32 opengl32
