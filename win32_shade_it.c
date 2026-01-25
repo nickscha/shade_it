@@ -1352,13 +1352,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         while (PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
         {
-          switch (message.message)
-          {
-          default:
-            TranslateMessage(&message);
-            DispatchMessageA(&message);
-            break;
-          }
+          TranslateMessage(&message);
+          DispatchMessageA(&message);
         }
       }
 
