@@ -221,12 +221,6 @@ typedef struct WIN32_FILE_ATTRIBUTE_DATA
   u32 nFileSizeLow;
 } WIN32_FILE_ATTRIBUTE_DATA;
 
-typedef enum GET_FILEEX_INFO_LEVELS
-{
-  GetFileExInfoStandard,
-  GetFileExMaxInfoLevel
-} GET_FILEEX_INFO_LEVELS;
-
 /* clang-format off */
 WIN32_API(void *) GetStdHandle(u32 nStdHandle);
 WIN32_API(i32)    CloseHandle(void *hObject);
@@ -241,7 +235,7 @@ WIN32_API(u32)    GetFileSize(void *hFile, u32 *lpFileSizeHigh);
 WIN32_API(i32)    ReadFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToRead, u32 *lpNumberOfBytesRead, void *lpOverlapped);
 WIN32_API(i32)    WriteFile(void *hFile, void *lpBuffer, u32 nNumberOfBytesToWrite, u32 *lpNumberOfBytesWritten, void *lpOverlapped);
 WIN32_API(i32)    CompareFileTime(FILETIME *lpFileTime1, FILETIME *lpFileTime2);
-WIN32_API(i32)    GetFileAttributesExA(s8 *lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, void *lpFileInformation);
+WIN32_API(i32)    GetFileAttributesExA(s8 *lpFileName, u32 fInfoLevelId, void *lpFileInformation);
 WIN32_API(void)   Sleep(u32 dwMilliseconds);
 WIN32_API(void)   ExitProcess(u32 uExitCode);
 WIN32_API(i32)    PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
@@ -494,7 +488,7 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
 {
   static FILETIME empty = {0, 0};
   WIN32_FILE_ATTRIBUTE_DATA fad;
-  return GetFileAttributesExA(file, GetFileExInfoStandard, &fad) ? fad.ftLastWriteTime : empty;
+  return GetFileAttributesExA(file, 0, &fad) ? fad.ftLastWriteTime : empty;
 }
 
 typedef struct win32_shade_it_state
