@@ -624,6 +624,8 @@ typedef struct win32_shade_it_state
   u8 window_minimized;
   u8 window_size_changed;
 
+  u32 target_frames_per_second;
+
   s8 *window_title;
 
   void *window_handle;
@@ -1068,6 +1070,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   state.window_clear_color_r = 0.5f;
   state.window_handle = 0;
   state.dc = 0;
+  state.target_frames_per_second = 60; /* 60 FPS, 0 = unlimited */
 
   /******************************/
   /* Set DPI aware mode         */
@@ -1210,12 +1213,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       /* Frame Rate Limiting        */
       /******************************/
+      if (state.target_frames_per_second > 0)
       {
         LARGE_INTEGER time_end;
 
         f64 frame_time;
         f64 remaining;
-        f64 target_frame_time = 1.0 / 60.0;
+        f64 target_frame_time = 1.0 / (f64)state.target_frames_per_second;
 
         QueryPerformanceCounter(&time_end);
 
