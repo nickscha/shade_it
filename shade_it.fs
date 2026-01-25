@@ -72,14 +72,9 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
     if (iMouse.x >= 0.0)
     {
         vec2 mouse = iMouse.xy;
-
-        /* distance in pixels */
-        float d = length(fragCoord - mouse);
-
-        /* soft dot */
-        float dotMask = exp(-d * 0.08);
-
-        vec3 mouseCol = vec3(1.0, 0.2, 0.1);   /* red/orange */
+        float d = length(fragCoord - mouse); /* distance in pixels */
+        float dotMask = exp(-d * 0.08);      /* soft dot */
+        vec3 mouseCol = vec3(1.0, 0.2, 0.1); /* red/orange */
 
         col += mouseCol * dotMask * 1.2;
     }
