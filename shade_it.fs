@@ -10,6 +10,7 @@ uniform float iTimeDelta;
 uniform int   iFrame;
 uniform float iFrameRate;
 uniform vec4  iMouse;
+uniform sampler2D iTexture;
 
 float hash(vec2 p)
 {
@@ -77,6 +78,23 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
         vec3 mouseCol = vec3(1.0, 0.2, 0.1); /* red/orange */
 
         col += mouseCol * dotMask * 1.2;
+    }
+
+    /* Texture visualization */
+    vec2 cornerSize = vec2(588.0, 7.0); // size in pixels
+    vec2 cornerPos  = vec2(0, 0);       // offset from bottom-left
+
+    if (fragCoord.x >= cornerPos.x && fragCoord.x < cornerPos.x + cornerSize.x &&
+        fragCoord.y >= cornerPos.y && fragCoord.y < cornerPos.y + cornerSize.y)
+    {
+        /* map fragCoord to [0,1] UV for the texture */
+        vec2 texUV;
+        texUV.x = (fragCoord.x - cornerPos.x) / cornerSize.x;
+        texUV.y = 1.0 - (fragCoord.y - cornerPos.y) / cornerSize.y;  // flip Y
+
+        vec3 texCol = texture(iTexture, texUV).rrr; // grayscale font
+        float mask = 1.0 - texCol.r;                // black glyph = 1
+        col = mix(col, vec3(0.0), mask);            // overlay black font
     }
 
     outColor = vec4(col, 1.0);

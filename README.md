@@ -31,7 +31,7 @@ A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL S
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
 - **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
-- **Minimal binary size** — around 11kb binary
+- **Minimal binary size** — around 15kb binary
 - **Strict compilation** — built with aggressive warnings & safety checks  
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 
@@ -75,12 +75,13 @@ If you want to create your own **GLSL fragment shader from scratch** you can use
 out vec4 FragColor;
 
 /* Uniforms provided */
-uniform vec3  iResolution; // viewport width and height
-uniform float iTime;       // time elapsed in seconds
-uniform float iTimeDelta;  // render time in seconds
-uniform int   iFrame;      // total frame counter
-uniform float iFrameRate;  // current frames per second
-uniform vec4  iMouse;      // mouse position (x,y)
+uniform vec3  iResolution;  // viewport width and height
+uniform float iTime;        // time elapsed in seconds
+uniform float iTimeDelta;   // render time in seconds
+uniform int   iFrame;       // total frame counter
+uniform float iFrameRate;   // current frames per second
+uniform vec4  iMouse;       // mouse position (x,y)
+uniform sampler2d iTexture; // texture slot
 
 void mainImage(out vec4 outColor, in vec2 fragCoord)
 {
