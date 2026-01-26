@@ -899,6 +899,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
 /* 1-bit bitmap, packed, row-major */
 /* width=270, height=7 */
+/* Charset: ABCDEFGHIJKLMNOPQRSTUVWXYZbxyz0123456789:%+- */
 #define SHADE_IT_FONT_WIDTH 270
 #define SHADE_IT_FONT_HEIGHT 7
 #define SHADE_IT_FONT_GLYPH_WIDTH 6
