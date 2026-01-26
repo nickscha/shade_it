@@ -1370,6 +1370,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* Get XInput controller */
       if (XInputGetState)
       {
+        /* TODO(nickscha): Query up to 4 controllers connected */
         XINPUT_STATE xinput_state = {0};
         u32 controller_index = 0;
         u32 result = XInputGetState(controller_index, &xinput_state);
