@@ -10,6 +10,7 @@ uniform float iTimeDelta;
 uniform int   iFrame;
 uniform float iFrameRate;
 uniform vec4  iMouse;
+uniform vec4  iTextureInfo;
 uniform sampler2D iTexture;
 
 float hash(vec2 p)
@@ -81,8 +82,8 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
     }
 
     /* Texture visualization */
-    vec2 cornerSize = vec2(270.0, 7.0); // size in pixels
-    vec2 cornerPos  = vec2(0, 0);       // offset from bottom-left
+    vec2 cornerSize = iTextureInfo.xy; // size in pixels
+    vec2 cornerPos  = vec2(0, 0);      // offset from bottom-left
 
     if (fragCoord.x >= cornerPos.x && fragCoord.x < cornerPos.x + cornerSize.x &&
         fragCoord.y >= cornerPos.y && fragCoord.y < cornerPos.y + cornerSize.y)

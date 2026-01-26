@@ -898,6 +898,8 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 /* width=270, height=7 */
 #define SHADE_IT_FONT_WIDTH 270
 #define SHADE_IT_FONT_HEIGHT 7
+#define SHADE_IT_FONT_GLYPH_WIDTH 6
+#define SHADE_IT_FONT_GLYPH_HEIGHT 7
 
 static u8 shade_it_font[] = {
     0x73, 0xC7, 0x38, 0xFB, 0xE7, 0x22, 0x71, 0xE8, 0xA0, 0x8B, 0x27, 0x3C,
@@ -920,7 +922,6 @@ static u8 shade_it_font[] = {
     0x73, 0x8F, 0xA0, 0x72, 0x27, 0x18, 0x8B, 0xE8, 0xA6, 0x72, 0x06, 0xA2,
     0x70, 0x87, 0x08, 0x52, 0x22, 0x3E, 0xF2, 0x27, 0x3E, 0x71, 0xCF, 0xBC,
     0x13, 0xC7, 0x08, 0x71, 0xC0, 0x26, 0x00, 0x00, 0x00};
-
 
 SHADE_IT_API void unpack_bitmap_1bit_to_r8(
     u8 *dst, /* width * height bytes */
@@ -1232,6 +1233,7 @@ typedef struct shade_it_shader
   i32 loc_iFrame;
   i32 loc_iFrameRate;
   i32 loc_iMouse;
+  i32 loc_iTextureInfo;
   i32 loc_iTexture;
 
 } shade_it_shader;
@@ -1279,6 +1281,7 @@ SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_na
     shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
     shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
     shader->loc_iMouse = glGetUniformLocation(shader->program, "iMouse");
+    shader->loc_iTextureInfo = glGetUniformLocation(shader->program, "iTextureInfo");
     shader->loc_iTexture = glGetUniformLocation(shader->program, "iTexture");
 
     shader->created = 1;
@@ -1514,6 +1517,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glUniform1i(main_shader.loc_iFrame, state.iFrame);
       glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
       glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, 1.0f, 1.0f);
+      glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
       glUniform1i(main_shader.loc_iTexture, 0);
       glDrawArrays(GL_TRIANGLES, 0, 3);
       SwapBuffers(state.dc);
