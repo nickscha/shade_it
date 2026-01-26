@@ -81,7 +81,7 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
     }
 
     /* Texture visualization */
-    vec2 cornerSize = vec2(588.0, 7.0); // size in pixels
+    vec2 cornerSize = vec2(270.0, 7.0); // size in pixels
     vec2 cornerPos  = vec2(0, 0);       // offset from bottom-left
 
     if (fragCoord.x >= cornerPos.x && fragCoord.x < cornerPos.x + cornerSize.x &&
@@ -93,7 +93,7 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
         texUV.y = 1.0 - (fragCoord.y - cornerPos.y) / cornerSize.y;  // flip Y
 
         vec3 texCol = texture(iTexture, texUV).rrr; // grayscale font
-        float mask = 1.0 - texCol.r;                // black glyph = 1
+        float mask = texCol.r;                      // black glyph = 1
         col = mix(col, vec3(0.0), mask);            // overlay black font
     }
 
