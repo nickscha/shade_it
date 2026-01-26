@@ -2,6 +2,7 @@
 REM Compiles the program without the C standard library
 
 set PLATFORM_NAME=win32_shade_it
+set ICON_DATA=win32_shade_it.res
 
 set DEF_COMPILER_FLAGS=-mwindows -march=native -mtune=native ^
 -std=c89 -pedantic -nodefaultlibs -nostdlib -mno-stack-arg-probe -Xlinker /STACK:0x100000,0x100000 -Xlinker /ENTRY:mainCRTStartup ^
@@ -11,5 +12,5 @@ set DEF_COMPILER_FLAGS=-mwindows -march=native -mtune=native ^
 
 set DEF_FLAGS_LINKER=-lkernel32 -luser32 -lgdi32 -lopengl32
 
-cc -s -O2 %DEF_COMPILER_FLAGS% %PLATFORM_NAME%.c win32_shade_it.res -o %PLATFORM_NAME%.exe %DEF_FLAGS_LINKER%
+cc -s -O2 %DEF_COMPILER_FLAGS% %PLATFORM_NAME%.c %ICON_DATA% -o %PLATFORM_NAME%.exe %DEF_FLAGS_LINKER%
 %PLATFORM_NAME%.exe
