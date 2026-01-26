@@ -896,6 +896,9 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
 /* 1-bit bitmap, packed, row-major */
 /* width=270, height=7 */
+#define SHADE_IT_FONT_WIDTH 270
+#define SHADE_IT_FONT_HEIGHT 7
+
 static u8 shade_it_font[] = {
     0x73, 0xC7, 0x38, 0xFB, 0xE7, 0x22, 0x71, 0xE8, 0xA0, 0x8B, 0x27, 0x3C,
     0x73, 0xC7, 0x3E, 0x8A, 0x28, 0xA2, 0x8B, 0xE0, 0x00, 0x00, 0x07, 0x08,
@@ -918,8 +921,6 @@ static u8 shade_it_font[] = {
     0x70, 0x87, 0x08, 0x52, 0x22, 0x3E, 0xF2, 0x27, 0x3E, 0x71, 0xCF, 0xBC,
     0x13, 0xC7, 0x08, 0x71, 0xC0, 0x26, 0x00, 0x00, 0x00};
 
-static u32 shade_it_font_width = 270;
-static u32 shade_it_font_height = 7;
 
 SHADE_IT_API void unpack_bitmap_1bit_to_r8(
     u8 *dst, /* width * height bytes */
@@ -962,10 +963,6 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   void *fake_rc;
   i32 fake_pixel_format;
   PIXELFORMATDESCRIPTOR fake_pfd = {0};
-
-  (void)shade_it_font;
-  (void)shade_it_font_width;
-  (void)shade_it_font_height;
 
   window_class.style = CS_OWNDC;
   window_class.lpfnWndProc = win32_window_callback;
@@ -1366,16 +1363,16 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   {
     /* Generate font texture */
-    u8 shade_it_font_pixels[270 * 7];
+    u8 shade_it_font_pixels[SHADE_IT_FONT_WIDTH * SHADE_IT_FONT_HEIGHT];
     u32 tex;
 
     /* OpenGL does not allow 1bit packed texture data so we convert each bit to 1 byte */
-    unpack_bitmap_1bit_to_r8(shade_it_font_pixels, shade_it_font, shade_it_font_width, shade_it_font_height);
+    unpack_bitmap_1bit_to_r8(shade_it_font_pixels, shade_it_font, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT);
 
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (i32)shade_it_font_width, (i32)shade_it_font_height, 0, GL_RED, GL_UNSIGNED_BYTE, shade_it_font_pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, 0, GL_RED, GL_UNSIGNED_BYTE, shade_it_font_pixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glActiveTexture(GL_TEXTURE0);
