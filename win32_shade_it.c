@@ -1031,7 +1031,8 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
       window_class.lpszClassName,
       window_style,
       0, 0,
-      (i32)state->window_width, (i32)state->window_height,
+      rect.right - rect.left, 
+      rect.bottom - rect.top,
       0, 0,
       window_instance,
       state /* Pass pointer to user data to the window callback */
