@@ -126,6 +126,12 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define RIM_TYPEKEYBOARD 1
 #define RI_KEY_BREAK 1
 
+#define HIGH_PRIORITY_CLASS 0x80
+#define THREAD_PRIORITY_HIGHEST 2
+#define ES_SYSTEM_REQUIRED ((u32)0x00000001)
+#define ES_DISPLAY_REQUIRED ((u32)0x00000002)
+#define ES_CONTINUOUS ((u32)0x80000000)
+
 typedef void *(*PROC)(void);
 typedef i64 (*WNDPROC)(void *, u32, u64, i64);
 
@@ -330,6 +336,12 @@ WIN32_API(i32)    RegisterRawInputDevices(RAWINPUTDEVICE* pRawInputDevices, u32 
 WIN32_API(u32)    GetRawInputData(void *hRawInput, u32 uiCommand, void *pData, u32 *pcbSize, u32 cbSizeHeader);
 WIN32_API(i32)    GetCursorPos(POINT *lpPoint);
 WIN32_API(i32)    ScreenToClient(void *hWnd, POINT *lpPoint);
+
+WIN32_API(void *) GetCurrentProcess(void);
+WIN32_API(i32)    SetPriorityClass(void *hProcess, u32 dwPriorityClass);
+WIN32_API(void *) GetCurrentThread(void);
+WIN32_API(i32)    SetThreadPriority(void *hThread, i32 nPriority);
+WIN32_API(u32)    SetThreadExecutionState(u32 esFlags);
 
 /* WGL */
 WIN32_API(void *) wglCreateContext(void *unnamedParam1);
@@ -1031,7 +1043,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
       window_class.lpszClassName,
       window_style,
       0, 0,
-      rect.right - rect.left, 
+      rect.right - rect.left,
       rect.bottom - rect.top,
       0, 0,
       window_instance,
@@ -1322,6 +1334,24 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   state.window_handle = 0;
   state.dc = 0;
   state.target_frames_per_second = 60; /* 60 FPS, 0 = unlimited */
+
+  /******************************/
+  /* Set Process Priorities     */
+  /******************************/
+  if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS))
+  {
+    return 1;
+  }
+
+  if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST))
+  {
+    return 1;
+  }
+
+  if (!SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED))
+  {
+    return 1;
+  }
 
   /******************************/
   /* Set DPI aware mode         */
