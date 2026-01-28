@@ -9,6 +9,9 @@ uniform float iTime;
 uniform float iTimeDelta;
 uniform int   iFrame;
 uniform float iFrameRate;
+uniform vec4  iMouse;
+uniform vec4  iTextureInfo;
+uniform sampler2D iTexture;
 
 void mainImage(out vec4 outColor, in vec2 fragCoord)
 {
