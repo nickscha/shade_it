@@ -415,6 +415,7 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_VENDOR 0x1F00
 #define GL_RENDERER 0x1F01
 #define GL_VERSION 0x1F02
+#define GL_STREAM_DRAW 0x88E0
 #define GL_STATIC_DRAW 0x88E4
 #define GL_DYNAMIC_DRAW 0x88E8
 #define GL_ARRAY_BUFFER 0x8892
@@ -971,7 +972,7 @@ static u8 shade_it_font[] = {
 
 /* clang-format off */
 /* Charset: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:%+-. " */
-SHADE_IT_API i32 character_to_font_index(s8 c)
+SHADE_IT_API i32 font_char_to_glyph_index(s8 c)
 {
   /* Convert to uppercase */
   if (c >= 'a' && c <= 'z')
@@ -1020,6 +1021,151 @@ SHADE_IT_API void unpack_bitmap_1bit_to_r8(
       dst[bit_index] = b ? 0xFF : 0x00;
     }
   }
+}
+
+SHADE_IT_API void text_append_char(s8 *text, u32 text_size, u32 *len, s8 c)
+{
+  if (*len + 1 >= text_size)
+  {
+    return;
+  }
+  text[*len] = c;
+  (*len)++;
+  text[*len] = 0;
+}
+
+SHADE_IT_API void text_append_str(s8 *text, u32 text_size, u32 *len, s8 *s)
+{
+  while (*s)
+  {
+    text_append_char(text, text_size, len, *s);
+    s++;
+  }
+}
+
+SHADE_IT_API void text_append_i32(s8 *text, u32 text_size, u32 *len, i32 v)
+{
+  s8 buf[12];
+  i32 i = 0;
+  u32 u;
+
+  if (v < 0)
+  {
+    text_append_char(text, text_size, len, '-');
+    u = (u32)(-v);
+  }
+  else
+  {
+    u = (u32)v;
+  }
+
+  if (u == 0)
+  {
+    text_append_char(text, text_size, len, '0');
+    return;
+  }
+
+  while (u && i < (i32)sizeof(buf))
+  {
+    buf[i++] = (s8)('0' + (u % 10));
+    u /= 10;
+  }
+
+  while (i--)
+  {
+    text_append_char(text, text_size, len, buf[i]);
+  }
+}
+
+SHADE_IT_API void text_append_f64(s8 *text, u32 text_size, u32 *len, f64 v, i32 decimals)
+{
+  i32 i;
+  f64 frac;
+
+  if (v < 0.0)
+  {
+    text_append_char(text, text_size, len, '-');
+    v = -v;
+  }
+
+  /* integer part */
+  text_append_i32(text, text_size, len, (i32)v);
+  text_append_char(text, text_size, len, '.');
+
+  frac = v - (f64)((i32)v);
+
+  for (i = 0; i < decimals; ++i)
+  {
+    frac *= 10.0;
+    text_append_char(text, text_size, len, (s8)('0' + ((i32)frac)));
+    frac -= (f64)((i32)frac);
+  }
+}
+
+SHADE_IT_API void text_null_terminate(s8 *text, u32 text_size, u32 *text_length)
+{
+  if (*text_length >= text_size)
+  {
+    text[text_size - 1] = 0;
+    *text_length = text_size - 1;
+    return;
+  }
+
+  text[*text_length] = 0;
+}
+
+typedef struct glyph
+{
+  f32 x;
+  f32 y;
+  f32 glyph_index;
+} glyph;
+
+SHADE_IT_API u32 text_to_glyphs(
+    s8 *text,
+    glyph *out_glyphs,
+    u32 max_glyphs,
+    f32 start_x,
+    f32 start_y,
+    f32 font_scale)
+{
+  u32 count = 0;
+  f32 x = start_x;
+  f32 y = start_y;
+
+  while (*text && count < max_glyphs)
+  {
+    s8 c = *text++;
+    i32 gi = font_char_to_glyph_index(c);
+
+    if (c == '\n')
+    {
+      x = start_x;
+      y += ((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT;
+      continue;
+    }
+
+    /* skip spaces explicitly */
+    if (c == ' ')
+    {
+      x += (f32)SHADE_IT_FONT_GLYPH_WIDTH * font_scale;
+      continue;
+    }
+
+    if (gi < 0)
+    {
+      continue;
+    }
+
+    out_glyphs[count].x = x;
+    out_glyphs[count].y = y;
+    out_glyphs[count].glyph_index = (f32)gi;
+    count++;
+
+    x += (f32)SHADE_IT_FONT_GLYPH_WIDTH * font_scale;
+  }
+
+  return count;
 }
 
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
@@ -1241,7 +1387,7 @@ SHADE_IT_API i32 opengl_shader_compile(
 
   if (!success)
   {
-    char infoLog[1024];
+    s8 infoLog[1024];
     glGetShaderInfoLog(shaderId, 1024, 0, infoLog);
 
     win32_print("[opengl] shader compilation error:\n");
@@ -1287,7 +1433,7 @@ SHADE_IT_API i32 opengl_shader_create(
 
   if (!success)
   {
-    char infoLog[1024];
+    s8 infoLog[1024];
     glGetProgramInfoLog(*shader_program, 1024, 0, infoLog);
 
     win32_print("[opengl] program creation error:\n");
@@ -1446,6 +1592,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   u32 main_vao;
   u32 font_vao;
+  u32 glyph_vbo;
 
   if (argv && argc > 1)
   {
@@ -1546,13 +1693,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   {
-    typedef struct glyph
-    {
-      f32 x;
-      f32 y;
-      f32 glyph_index;
-    } glyph;
-
     static f32 quad_vertices[] = {
         0.0f, 0.0f,
         1.0f, 0.0f,
@@ -1560,24 +1700,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         0.0f, 1.0f};
 
     u32 quad_vbo;
-    u32 glyph_vbo;
-    f32 x_offset = 10.0f;
-    f32 y_offset = 10.0f;
-    f32 font_scale = 2.0f;
-
-    glyph glyphs[4];
-    glyphs[0].x = x_offset;
-    glyphs[0].y = y_offset;
-    glyphs[0].glyph_index = (f32)character_to_font_index('F');
-    glyphs[1].x = x_offset + font_scale * SHADE_IT_FONT_GLYPH_WIDTH;
-    glyphs[1].y = y_offset;
-    glyphs[1].glyph_index = (f32)character_to_font_index('P');
-    glyphs[2].x = x_offset + font_scale * SHADE_IT_FONT_GLYPH_WIDTH * 2;
-    glyphs[2].y = y_offset;
-    glyphs[2].glyph_index = (f32)character_to_font_index('S');
-    glyphs[3].x = x_offset + font_scale * SHADE_IT_FONT_GLYPH_WIDTH * 3;
-    glyphs[3].y = y_offset;
-    glyphs[3].glyph_index = (f32)character_to_font_index(':');
 
     glGenVertexArrays(1, &font_vao);
     glBindVertexArray(font_vao);
@@ -1593,7 +1715,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
     glGenBuffers(1, &glyph_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, glyph_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glyphs), glyphs, GL_DYNAMIC_DRAW);
 
     /* iGlyph (location = 1) */
     glEnableVertexAttribArray(1);
@@ -1747,6 +1868,48 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* UI/Font renderning when F1 key is pressed */
       if (state.keys[0x70].is_down)
       {
+        s8 text[256];
+        u32 text_size = sizeof(text);
+        u32 text_length = 0;
+
+        glyph glyphs[256];
+        u32 glyph_count;
+        f32 font_scale = 2.0f;
+
+        text[0] = 0;
+
+        /* build UI string */
+        text_append_str(text, text_size, &text_length, "FPS      : ");
+        text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
+        text_append_str(text, text_size, &text_length, "\nFRAME    : ");
+        text_append_i32(text, text_size, &text_length, state.iFrame);
+        text_append_str(text, text_size, &text_length, "\nDELTA    : ");
+        text_append_f64(text, text_size, &text_length, state.iTimeDelta, 6);
+        text_append_str(text, text_size, &text_length, "\nTIME     : ");
+        text_append_f64(text, text_size, &text_length, state.iTime, 6);
+        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y: ");
+        text_append_i32(text, text_size, &text_length, state.mouse_x);
+        text_append_str(text, text_size, &text_length, "/");
+        text_append_i32(text, text_size, &text_length, state.mouse_y);
+        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y: ");
+        text_append_i32(text, text_size, &text_length, (i32)state.window_width);
+        text_append_str(text, text_size, &text_length, "/");
+        text_append_i32(text, text_size, &text_length, (i32)state.window_height);
+        text_null_terminate(text, text_size, &text_length);
+
+        glyph_count = text_to_glyphs(
+            text,
+            glyphs,
+            sizeof(glyphs) / sizeof(glyphs[0]),
+            10.0f, /* x */
+            10.0f, /* y */
+            font_scale);
+
+        /* TODO(nickscha): Measure GPU difference of STREAM_DRAW vs DYNAMIC_DRAW */
+        (void)GL_DYNAMIC_DRAW;
+
+        glBufferData(GL_ARRAY_BUFFER, (i32)(glyph_count * sizeof(glyph)), glyphs, GL_STREAM_DRAW);
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1754,9 +1917,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         glUniform3f(font_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
         glUniform4f(font_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
         glUniform1i(font_shader.loc_iTexture, 0);
-        glUniform1f(font_shader.loc_iFontScale, 2.0f);
+        glUniform1f(font_shader.loc_iFontScale, font_scale);
         glBindVertexArray(font_vao);
-        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, 4);
+        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, glyph_count);
 
         glDisable(GL_BLEND);
       }
