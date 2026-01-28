@@ -400,7 +400,10 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 
 /* OpenGL functions directly part of opengl32 lib */
 #define GL_TRUE 1
+#define GL_FALSE 0
+#define GL_FLOAT 0x1406
 #define GL_TRIANGLES 0x0004
+#define GL_TRIANGLE_FAN 0x0006
 #define GL_COLOR_BUFFER_BIT 0x00004000
 #define GL_FRAMEBUFFER_SRGB 0x8DB9
 #define GL_MULTISAMPLE 0x809D
@@ -411,6 +414,9 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_VENDOR 0x1F00
 #define GL_RENDERER 0x1F01
 #define GL_VERSION 0x1F02
+#define GL_STATIC_DRAW 0x88E4
+#define GL_DYNAMIC_DRAW 0x88E8
+#define GL_ARRAY_BUFFER 0x8892
 
 #define GL_UNSIGNED_BYTE 0x1401
 #define GL_TEXTURE_2D 0x0DE1
@@ -490,6 +496,27 @@ static PFNGLUNIFORM4FPROC glUniform4f;
 
 typedef void (*PFNGLACTIVETEXTUREPROC)(u32 texture);
 static PFNGLACTIVETEXTUREPROC glActiveTexture;
+
+typedef void (*PFNGLGENBUFFERSPROC)(i32 n, u32 *buffers);
+static PFNGLGENBUFFERSPROC glGenBuffers;
+
+typedef void (*PFNGLBINDBUFFERPROC)(u32 target, u32 buffer);
+static PFNGLBINDBUFFERPROC glBindBuffer;
+
+typedef void (*PFNGLBUFFERDATAPROC)(u32 target, i32 size, void *data, u32 usage);
+static PFNGLBUFFERDATAPROC glBufferData;
+
+typedef void (*PFNGLENABLEVERTEXATTRIBARRAYPROC)(u32 index);
+static PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
+
+typedef void (*PFNGLVERTEXATTRIBPOINTERPROC)(u32 index, i32 size, u32 type, u8 normalized, i32 stride, void *pointer);
+static PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
+
+typedef void (*PFNGLVERTEXATTRIBDIVISORPROC)(u32 index, u32 divisor);
+static PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
+
+typedef void (*PFNGLDRAWARRAYSINSTANCED)(i32 mode, i32 first, i32 count, u32 primcount);
+static PFNGLDRAWARRAYSINSTANCED glDrawArraysInstanced;
 
 /* #############################################################################
  * # Main Code
@@ -939,6 +966,32 @@ static u8 shade_it_font[] = {
     0x70, 0x87, 0x08, 0x52, 0x22, 0x3E, 0xF2, 0x27, 0x3E, 0x71, 0xCF, 0xBC,
     0x13, 0xC7, 0x08, 0x71, 0xC0, 0x26, 0x00, 0x00, 0x00};
 
+/* clang-format off */
+/* Charset: ABCDEFGHIJKLMNOPQRSTUVWXYZbxyz0123456789:%+- */
+SHADE_IT_API i32 character_to_font_index(s8 c)
+{
+  if (c == 'b') return 26;
+  if (c == 'x') return 27;
+  if (c == 'y') return 28;
+  if (c == 'z') return 29;
+
+  /* Convert to uppercase */
+  if (c >= 'a' && c <= 'z')
+  {
+    c = (s8)(c - 'a' + 'A');
+  }
+
+  if (c >= 'A' && c <= 'Z') return c - 'A';
+  if (c >= '0' && c <= '9')  return 30 + (c - '0');
+  if (c == ':') return 40;
+  if (c == '%') return 41;
+  if (c == '+') return 42;
+  if (c == '-') return 43;
+
+  return -1;
+}
+/* clang-format on */
+
 SHADE_IT_API void unpack_bitmap_1bit_to_r8(
     u8 *dst, /* width * height bytes */
     u8 *src, /* packed bits */
@@ -1091,6 +1144,13 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
   glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
   glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
+  glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers");
+  glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
+  glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
+  glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glEnableVertexAttribArray");
+  glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
+  glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)wglGetProcAddress("glVertexAttribDivisor");
+  glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCED)wglGetProcAddress("glDrawArraysInstanced");
 
 #pragma GCC diagnostic pop
 
@@ -1255,6 +1315,17 @@ typedef struct shade_it_shader
 
 } shade_it_shader;
 
+typedef struct shade_it_shader_font
+{
+  u32 created;
+  u32 program;
+
+  i32 loc_iResolution;
+  i32 loc_iTextureInfo;
+  i32 loc_iTexture;
+
+} shade_it_shader_font;
+
 SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_name)
 {
   static s8 *shader_code_vertex =
@@ -1313,6 +1384,65 @@ SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_na
   VirtualFree(src, 0, MEM_RELEASE);
 }
 
+SHADE_IT_API void opengl_shader_font_load(shade_it_shader_font *shader)
+{
+  static s8 *shader_font_code_vertex =
+      "#version 330 core\n"
+      "layout(location = 0) in vec2 aPos;\n"
+      "layout(location = 1) in vec2 iPos;\n"
+      "layout(location = 2) in float iGlyph;\n"
+      "uniform vec3 iRes;\n"
+      "uniform vec4 iTeI;\n"
+      "out vec2 vUV;\n"
+      "void main() {\n"
+      "vec2 p = iPos + aPos * (vec2(iTeI.z, iTeI.w));\n"
+      "gl_Position = vec4((p.x / iRes.x) * 2.0 - 1.0, (p.y / iRes.y) * 2.0 - 1.0, 0.0, 1.0);\n"
+      "vUV = vec2((iGlyph + aPos.x) * iTeI.z / iTeI.x, 1.0 - aPos.y * iTeI.w / iTeI.y);\n"
+      "}\n";
+
+  static s8 *shader_font_code_fragment =
+      "#version 330 core\n"
+      "\n"
+      "in vec2 vUV;\n"
+      "out vec4 FragColor;\n"
+      "\n"
+      "uniform sampler2D iTexture;\n"
+      "\n"
+      "void main()\n"
+      "{\n"
+      "    float glyph = texture(iTexture, vUV).r;\n"
+      "\n"
+      "    /* discard background */\n"
+      "    if (glyph < 0.5)\n"
+      "        discard;\n"
+      "\n"
+      "    FragColor = vec4(0.0, 0.0, 0.0, 1.0); /* black text */\n"
+      "}\n";
+
+  if (opengl_shader_create(&shader->program, shader_font_code_vertex, shader_font_code_fragment))
+  {
+    /* If there has been already a shader created delete the old one */
+    if (shader->created)
+    {
+      glDeleteProgram(shader->program);
+    }
+
+    glUseProgram(shader->program);
+
+    shader->loc_iResolution = glGetUniformLocation(shader->program, "iRes");
+    shader->loc_iTextureInfo = glGetUniformLocation(shader->program, "iTeI");
+    shader->loc_iTexture = glGetUniformLocation(shader->program, "iTexture");
+
+    shader->created = 1;
+
+    win32_print("[opengl] font shader loaded\n");
+  }
+  else
+  {
+    win32_print("[opengl] compile failed, keeping old shader\n");
+  }
+}
+
 SHADE_IT_API i32 start(i32 argc, u8 **argv)
 {
   /* Default fragment shader file name to load if no file is passed as an argument in cli */
@@ -1320,6 +1450,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   win32_shade_it_state state = {0};
   shade_it_shader main_shader = {0};
+  shade_it_shader_font font_shader = {0};
+
+  u32 main_vao;
+  u32 font_vao;
 
   if (argv && argc > 1)
   {
@@ -1327,7 +1461,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   state.running = 1;
-  state.window_title = "shade_it v0.5";
+  state.window_title = "shade_it v0.5 (press F1 to show information)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
@@ -1387,15 +1521,16 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   {
     /* Generate a dummy vao with no buffer */
-    u32 vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+
+    glGenVertexArrays(1, &main_vao);
+    glBindVertexArray(main_vao);
 
     /* Load Fragment Shader source code from file */
     win32_print("[opengl] load shader file: ");
     win32_print(fragment_shader_file_name);
     win32_print("\n");
 
+    opengl_shader_font_load(&font_shader);
     opengl_shader_load(&main_shader, fragment_shader_file_name);
   }
 
@@ -1416,6 +1551,69 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glActiveTexture(GL_TEXTURE0);
+  }
+
+  {
+    typedef struct glyph
+    {
+      f32 x;
+      f32 y;
+      f32 glyph_index;
+    } glyph;
+
+    static f32 quad_vertices[] =
+        {
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f};
+
+    u32 quad_vbo;
+    u32 glyph_vbo;
+    f32 x_offset = 10.0f;
+    f32 y_offset = (f32)state.window_height - (SHADE_IT_FONT_GLYPH_HEIGHT + x_offset);
+
+    glyph glyphs[4];
+    glyphs[0].x = x_offset;
+    glyphs[0].y = y_offset;
+    glyphs[0].glyph_index = (f32)character_to_font_index('F');
+    glyphs[1].x = x_offset + SHADE_IT_FONT_GLYPH_WIDTH;
+    glyphs[1].y = y_offset;
+    glyphs[1].glyph_index = (f32)character_to_font_index('P');
+    glyphs[2].x = x_offset + SHADE_IT_FONT_GLYPH_WIDTH * 2;
+    glyphs[2].y = y_offset;
+    glyphs[2].glyph_index = (f32)character_to_font_index('S');
+    glyphs[3].x = x_offset + SHADE_IT_FONT_GLYPH_WIDTH * 3;
+    glyphs[3].y = y_offset;
+    glyphs[3].glyph_index = (f32)character_to_font_index(':');
+
+    glGenVertexArrays(1, &font_vao);
+    glBindVertexArray(font_vao);
+
+    glGenBuffers(1, &quad_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
+
+    /* aPos */
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(f32), (void *)0);
+    glVertexAttribDivisor(0, 0);
+
+    glGenBuffers(1, &glyph_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, glyph_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glyphs), glyphs, GL_DYNAMIC_DRAW);
+
+    /* iPos (location = 1) */
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)0);
+    glVertexAttribDivisor(1, 1);
+
+    /* iGlyph (location = 2) */
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)(sizeof(f32) * 2));
+    glVertexAttribDivisor(2, 1);
+
+    glBindVertexArray(0);
   }
 
   {
@@ -1548,6 +1746,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         state.window_size_changed = 0;
       }
       glClear(GL_COLOR_BUFFER_BIT);
+
+      glUseProgram(main_shader.program);
       glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
       glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
       glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
@@ -1556,7 +1756,20 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, 1.0f, 1.0f);
       glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
       glUniform1i(main_shader.loc_iTexture, 0);
+      glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
+
+      /* Font rendering */
+      if (state.keys[0x70].is_down)
+      {
+        glUseProgram(font_shader.program);
+        glUniform3f(font_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
+        glUniform4f(font_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
+        glUniform1i(font_shader.loc_iTexture, 0);
+        glBindVertexArray(font_vao);
+        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, 4);
+      }
+
       SwapBuffers(state.dc);
 
       /******************************/
