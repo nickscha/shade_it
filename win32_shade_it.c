@@ -1402,21 +1402,14 @@ SHADE_IT_API void opengl_shader_font_load(shade_it_shader_font *shader)
 
   static s8 *shader_font_code_fragment =
       "#version 330 core\n"
-      "\n"
       "in vec2 vUV;\n"
       "out vec4 FragColor;\n"
-      "\n"
       "uniform sampler2D iTexture;\n"
-      "\n"
       "void main()\n"
       "{\n"
-      "    float glyph = texture(iTexture, vUV).r;\n"
-      "\n"
-      "    /* discard background */\n"
-      "    if (glyph < 0.5)\n"
-      "        discard;\n"
-      "\n"
-      "    FragColor = vec4(0.0, 0.0, 0.0, 1.0); /* black text */\n"
+      "float glyph = texture(iTexture, vUV).r;\n"
+      "if (glyph < 0.5) discard;\n"
+      "FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
       "}\n";
 
   if (opengl_shader_create(&shader->program, shader_font_code_vertex, shader_font_code_fragment))
