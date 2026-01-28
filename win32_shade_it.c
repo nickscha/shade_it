@@ -135,7 +135,7 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 typedef void *(*PROC)(void);
 typedef i64 (*WNDPROC)(void *, u32, u64, i64);
 
-typedef struct tagCREATESTRUCTA
+typedef struct CREATESTRUCTA
 {
   void *lpCreateParams;
   void *hInstance;
@@ -149,7 +149,7 @@ typedef struct tagCREATESTRUCTA
   s8 *lpszName;
   s8 *lpszClass;
   u32 dwExStyle;
-} CREATESTRUCTA, *LPCREATESTRUCTA;
+} CREATESTRUCTA;
 
 typedef struct WNDCLASSA
 {
@@ -165,21 +165,21 @@ typedef struct WNDCLASSA
   s8 *lpszClassName;
 } WNDCLASSA;
 
-typedef struct tagPOINT
+typedef struct POINT
 {
   i32 x;
   i32 y;
 } POINT;
 
-typedef struct tagRECT
+typedef struct RECT
 {
   i32 left;
   i32 top;
   i32 right;
   i32 bottom;
-} RECT, *PRECT, *LPRECT;
+} RECT;
 
-typedef struct tagMSG
+typedef struct MSG
 {
   void *hwnd;
   u32 message;
@@ -188,9 +188,9 @@ typedef struct tagMSG
   u32 time;
   POINT pt;
   u32 lPrivate;
-} MSG, *LPMSG;
+} MSG;
 
-typedef struct tagPIXELFORMATDESCRIPTOR
+typedef struct PIXELFORMATDESCRIPTOR
 {
   u16 nSize;
   u16 nVersion;
@@ -218,7 +218,7 @@ typedef struct tagPIXELFORMATDESCRIPTOR
   u32 dwLayerMask;
   u32 dwVisibleMask;
   u32 dwDamageMask;
-} PIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
+} PIXELFORMATDESCRIPTOR;
 
 typedef struct FILETIME
 {
@@ -308,8 +308,8 @@ WIN32_API(i32)    CompareFileTime(FILETIME *lpFileTime1, FILETIME *lpFileTime2);
 WIN32_API(i32)    GetFileAttributesExA(s8 *lpFileName, u32 fInfoLevelId, void *lpFileInformation);
 WIN32_API(void)   Sleep(u32 dwMilliseconds);
 WIN32_API(void)   ExitProcess(u32 uExitCode);
-WIN32_API(i32)    PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
-WIN32_API(i32)    GetMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
+WIN32_API(i32)    PeekMessageA(MSG* lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
+WIN32_API(i32)    GetMessageA(MSG* lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
 WIN32_API(i32)    TranslateMessage(MSG *lpMsg);
 WIN32_API(i64)    DispatchMessageA(MSG *lpMsg);
 WIN32_API(i64)    DefWindowProcA(void *hWnd, u32 Msg, u64 wParam, i64 lParam);
@@ -325,10 +325,10 @@ WIN32_API(i32)    ReleaseDC(void *hWnd, void *hDC);
 WIN32_API(i32)    SwapBuffers(void *unnamedParam1);
 WIN32_API(i32)    ChoosePixelFormat(void *hdc, PIXELFORMATDESCRIPTOR *ppfd);
 WIN32_API(i32)    SetPixelFormat(void *hdc, i32 format, PIXELFORMATDESCRIPTOR *ppfd);
-WIN32_API(i32)    DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+WIN32_API(i32)    DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, PIXELFORMATDESCRIPTOR* ppfd);
 WIN32_API(i32)    ShowWindow(void *hWnd, i32 nCmdShow);
 WIN32_API(i32)    DestroyWindow(void *hWnd);
-WIN32_API(i32)    AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
+WIN32_API(i32)    AdjustWindowRect(RECT* lpRect, u32 dwStyle, i32 bMenu);
 WIN32_API(i32)    QueryPerformanceCounter(i64 *lpPerformanceCount);
 WIN32_API(i32)    QueryPerformanceFrequency(i64 *lpFrequency);
 WIN32_API(s8 *)   GetCommandLineA(void);
