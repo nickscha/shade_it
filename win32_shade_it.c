@@ -291,6 +291,21 @@ typedef struct RAWINPUT
   } data;
 } RAWINPUT;
 
+typedef struct PROCESS_MEMORY_COUNTERS_EX
+{
+  u32 cb;
+  u32 PageFaultCount;
+  u64 PeakWorkingSetSize;
+  u64 WorkingSetSize;
+  u64 QuotaPeakPagedPoolUsage;
+  u64 QuotaPagedPoolUsage;
+  u64 QuotaPeakNonPagedPoolUsage;
+  u64 QuotaNonPagedPoolUsage;
+  u64 PagefileUsage;
+  u64 PeakPagefileUsage;
+  u64 PrivateUsage;
+} PROCESS_MEMORY_COUNTERS_EX;
+
 /* clang-format off */
 WIN32_API(void *) GetStdHandle(u32 nStdHandle);
 WIN32_API(i32)    CloseHandle(void *hObject);
@@ -791,6 +806,64 @@ SHADE_IT_API f32 win32_process_thumbstick(i16 value, i16 deadzone)
 SHADE_IT_API SHADE_IT_INLINE f32 win32_process_trigger(u8 value)
 {
   return value > XINPUT_GAMEPAD_TRIGGER_THRESHOLD ? (f32)value / 255.0f : 0.0f;
+}
+
+typedef struct process_memory_info
+{
+  u64 private_bytes; /* Commit charge (what you asked for) */
+  u64 working_set;   /* RAM currently used */
+  u64 peak_working_set;
+} process_memory_info;
+
+u8 win32_process_memory(process_memory_info *out)
+{
+  typedef i32(__stdcall * GetProcessMemoryInfo_Fn)(void *, PROCESS_MEMORY_COUNTERS_EX *, u32);
+  static GetProcessMemoryInfo_Fn pGetMemInfo = 0;
+  static i32 initialized = 0;
+
+  PROCESS_MEMORY_COUNTERS_EX pmc;
+
+  if (!initialized)
+  {
+    /* Win7+ */
+    void *kernel32 = LoadLibraryA("kernel32.dll");
+
+    if (kernel32)
+    {
+      *(void **)(&pGetMemInfo) = GetProcAddress(kernel32, "K32GetProcessMemoryInfo");
+    }
+
+    /* Vista and older */
+    if (!pGetMemInfo)
+    {
+      void *psapi = LoadLibraryA("psapi.dll");
+
+      if (psapi)
+      {
+        *(void **)(&pGetMemInfo) = GetProcAddress(psapi, "GetProcessMemoryInfo");
+      }
+    }
+
+    initialized = 1;
+  }
+
+  if (!pGetMemInfo)
+  {
+    return 0;
+  }
+
+  pmc.cb = sizeof(pmc);
+
+  if (!pGetMemInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+  {
+    return 0;
+  }
+
+  out->private_bytes = (u64)pmc.PrivateUsage;
+  out->working_set = (u64)pmc.WorkingSetSize;
+  out->peak_working_set = (u64)pmc.PeakWorkingSetSize;
+
+  return 1;
 }
 
 typedef struct win32_shade_it_state
@@ -1885,41 +1958,54 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* UI/Font renderning when F1 key is pressed */
       if (ui_enabled)
       {
-        s8 text[256];
+        s8 text[512];
         u32 text_size = sizeof(text);
         u32 text_length = 0;
 
-        glyph glyphs[256];
+        glyph glyphs[512];
         u32 glyph_count;
         f32 font_scale = 2.0f;
 
         u32 handle_count = 0;
+        process_memory_info mem = {0};
 
         /* build UI string */
         text[0] = 0;
-        text_append_str(text, text_size, &text_length, "FPS      : ");
+        text_append_str(text, text_size, &text_length, "FPS       : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
-        text_append_str(text, text_size, &text_length, "\nFRAME    : ");
+        text_append_str(text, text_size, &text_length, "\nFRAME     : ");
         text_append_i32(text, text_size, &text_length, state.iFrame);
-        text_append_str(text, text_size, &text_length, "\nDELTA    : ");
+        text_append_str(text, text_size, &text_length, "\nDELTA     : ");
         text_append_f64(text, text_size, &text_length, state.iTimeDelta, 6);
-        text_append_str(text, text_size, &text_length, "\nTIME     : ");
+        text_append_str(text, text_size, &text_length, "\nTIME      : ");
         text_append_f64(text, text_size, &text_length, state.iTime, 6);
-
-        if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
-        {
-          text_append_str(text, text_size, &text_length, "\nHANDLES  : ");
-          text_append_i32(text, text_size, &text_length, (i32)handle_count);
-        }
-
-        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y: ");
+        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y : ");
         text_append_i32(text, text_size, &text_length, state.mouse_x);
         text_append_str(text, text_size, &text_length, "/");
         text_append_i32(text, text_size, &text_length, state.mouse_y);
-        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y: ");
+        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y : ");
         text_append_i32(text, text_size, &text_length, (i32)state.window_width);
         text_append_str(text, text_size, &text_length, "/");
         text_append_i32(text, text_size, &text_length, (i32)state.window_height);
+
+        if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
+        {
+          text_append_str(text, text_size, &text_length, "\nHANDLES   : ");
+          text_append_i32(text, text_size, &text_length, (i32)handle_count);
+        }
+
+        if (win32_process_memory(&mem))
+        {
+          text_append_str(text, text_size, &text_length, "\nMEM WORK  : ");
+          text_append_i32(text, text_size, &text_length, (i32)(mem.working_set / (1024)));
+
+          text_append_str(text, text_size, &text_length, "\nMEM PEAK  : ");
+          text_append_i32(text, text_size, &text_length, (i32)(mem.peak_working_set / (1024)));
+
+          text_append_str(text, text_size, &text_length, "\nMEM COMMIT: ");
+          text_append_i32(text, text_size, &text_length, (i32)(mem.private_bytes / (1024)));
+        }
+
         text_null_terminate(text, text_size, &text_length);
 
         glyph_count = text_to_glyphs(
