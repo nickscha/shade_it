@@ -1299,10 +1299,15 @@ SHADE_IT_API i32 opengl_shader_create(
   return 1;
 }
 
-typedef struct shade_it_shader
+typedef struct shader_header
 {
   u32 created;
   u32 program;
+} shader_header;
+
+typedef struct shader_main
+{
+  shader_header header;
 
   i32 loc_iResolution;
   i32 loc_iTime;
@@ -1313,78 +1318,81 @@ typedef struct shade_it_shader
   i32 loc_iTextureInfo;
   i32 loc_iTexture;
 
-} shade_it_shader;
+} shader_main;
 
-typedef struct shade_it_shader_font
+typedef struct shader_font
 {
-  u32 created;
-  u32 program;
+  shader_header header;
 
   i32 loc_iResolution;
   i32 loc_iTextureInfo;
   i32 loc_iTexture;
 
-} shade_it_shader_font;
+} shader_font;
 
-SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_name)
+SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_vertex, s8 *shader_code_fragment)
+{
+  u32 new_program;
+
+  if (!opengl_shader_create(&new_program, shader_code_vertex, shader_code_fragment))
+  {
+    win32_print("[opengl] compile failed, keeping old shader is present\n");
+    return 0;
+  }
+
+  /* If there has been already a shader created delete the old one */
+  if (shader->created)
+  {
+    glDeleteProgram(shader->program);
+  }
+
+  shader->program = new_program;
+
+  glUseProgram(shader->program);
+
+  shader->created = 1;
+
+  return 1;
+}
+
+SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader_file_name)
 {
   static s8 *shader_code_vertex =
       "#version 330 core\n"
-      "\n"
-      " vec2 quad[3] = vec2[3](\n"
-      "  vec2(-1.0, -1.0),\n"
-      "  vec2( 3.0, -1.0),\n"
-      "  vec2(-1.0,  3.0)\n"
+      "vec2 quad[3] = vec2[3](\n"
+      " vec2(-1.0, -1.0),\n"
+      " vec2( 3.0, -1.0),\n"
+      " vec2(-1.0,  3.0)\n"
       ");\n"
-      "\n"
       "void main()\n"
       "{\n"
       "  gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0);\n"
       "}\n";
 
   u32 size = 0;
-  u8 *src = win32_file_read(shader_file_name, &size);
-  u32 new_program = 0;
+  u8 *shader_code_fragment = win32_file_read(shader_file_name, &size);
 
-  if (!src || size < 1)
+  if (!shader_code_fragment || size < 1)
   {
     return;
   }
 
-  if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
+  if (opengl_shader_load(&shader->header, shader_code_vertex, (s8 *)shader_code_fragment))
   {
-    /* If there has been already a shader created delete the old one */
-    if (shader->created)
-    {
-      glDeleteProgram(shader->program);
-    }
-
-    shader->program = new_program;
-
-    glUseProgram(shader->program);
-
-    shader->loc_iResolution = glGetUniformLocation(shader->program, "iResolution");
-    shader->loc_iTime = glGetUniformLocation(shader->program, "iTime");
-    shader->loc_iTimeDelta = glGetUniformLocation(shader->program, "iTimeDelta");
-    shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
-    shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
-    shader->loc_iMouse = glGetUniformLocation(shader->program, "iMouse");
-    shader->loc_iTextureInfo = glGetUniformLocation(shader->program, "iTextureInfo");
-    shader->loc_iTexture = glGetUniformLocation(shader->program, "iTexture");
-
-    shader->created = 1;
-
-    win32_print("[opengl] fragment shader loaded\n");
-  }
-  else
-  {
-    win32_print("[opengl] compile failed, keeping old shader\n");
+    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iResolution");
+    shader->loc_iTime = glGetUniformLocation(shader->header.program, "iTime");
+    shader->loc_iTimeDelta = glGetUniformLocation(shader->header.program, "iTimeDelta");
+    shader->loc_iFrame = glGetUniformLocation(shader->header.program, "iFrame");
+    shader->loc_iFrameRate = glGetUniformLocation(shader->header.program, "iFrameRate");
+    shader->loc_iMouse = glGetUniformLocation(shader->header.program, "iMouse");
+    shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTextureInfo");
+    shader->loc_iTexture = glGetUniformLocation(shader->header.program, "iTexture");
   }
 
-  VirtualFree(src, 0, MEM_RELEASE);
+  VirtualFree(shader_code_fragment, 0, MEM_RELEASE);
 }
 
-SHADE_IT_API void opengl_shader_font_load(shade_it_shader_font *shader)
+SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
 {
   static s8 *shader_font_code_vertex =
       "#version 330 core\n"
@@ -1411,31 +1419,11 @@ SHADE_IT_API void opengl_shader_font_load(shade_it_shader_font *shader)
       "FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
       "}\n";
 
-  u32 new_program = 0;
-
-  if (opengl_shader_create(&new_program, shader_font_code_vertex, shader_font_code_fragment))
+  if (opengl_shader_load(&shader->header, shader_font_code_vertex, shader_font_code_fragment))
   {
-    /* If there has been already a shader created delete the old one */
-    if (shader->created)
-    {
-      glDeleteProgram(shader->program);
-    }
-
-    shader->program = new_program;
-
-    glUseProgram(shader->program);
-
-    shader->loc_iResolution = glGetUniformLocation(shader->program, "iRes");
-    shader->loc_iTextureInfo = glGetUniformLocation(shader->program, "iTeI");
-    shader->loc_iTexture = glGetUniformLocation(shader->program, "iTexture");
-
-    shader->created = 1;
-
-    win32_print("[opengl] font shader loaded\n");
-  }
-  else
-  {
-    win32_print("[opengl] compile failed, keeping old shader\n");
+    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iRes");
+    shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTeI");
+    shader->loc_iTexture = glGetUniformLocation(shader->header.program, "iTexture");
   }
 }
 
@@ -1445,8 +1433,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   s8 *fragment_shader_file_name = "shade_it.fs";
 
   win32_shade_it_state state = {0};
-  shade_it_shader main_shader = {0};
-  shade_it_shader_font font_shader = {0};
+  shader_main main_shader = {0};
+  shader_font font_shader = {0};
 
   u32 main_vao;
   u32 font_vao;
@@ -1526,8 +1514,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     win32_print(fragment_shader_file_name);
     win32_print("\n");
 
-    opengl_shader_font_load(&font_shader);
-    opengl_shader_load(&main_shader, fragment_shader_file_name);
+    opengl_shader_load_shader_main(&main_shader, fragment_shader_file_name);
+    opengl_shader_load_shader_font(&font_shader);
   }
 
   {
@@ -1557,12 +1545,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       f32 glyph_index;
     } glyph;
 
-    static f32 quad_vertices[] =
-        {
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f};
+    static f32 quad_vertices[] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f};
 
     u32 quad_vbo;
     u32 glyph_vbo;
@@ -1661,7 +1648,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         if (CompareFileTime(&fs_now, &fs_last) != 0)
         {
-          opengl_shader_load(&main_shader, fragment_shader_file_name);
+          opengl_shader_load_shader_main(&main_shader, fragment_shader_file_name);
           fs_last = fs_now;
 
           /* Reset iTime elapsed seconds on hot reload */
@@ -1738,7 +1725,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       }
       glClear(GL_COLOR_BUFFER_BIT);
 
-      glUseProgram(main_shader.program);
+      glUseProgram(main_shader.header.program);
       glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
       glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
       glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
@@ -1750,10 +1737,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
 
-      /* Font rendering */
+      /* UI/Font renderning when F1 key is pressed */
       if (state.keys[0x70].is_down)
       {
-        glUseProgram(font_shader.program);
+        glUseProgram(font_shader.header.program);
         glUniform3f(font_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
         glUniform4f(font_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
         glUniform1i(font_shader.loc_iTexture, 0);
