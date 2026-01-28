@@ -342,6 +342,7 @@ WIN32_API(i32)    SetPriorityClass(void *hProcess, u32 dwPriorityClass);
 WIN32_API(void *) GetCurrentThread(void);
 WIN32_API(i32)    SetThreadPriority(void *hThread, i32 nPriority);
 WIN32_API(u32)    SetThreadExecutionState(u32 esFlags);
+WIN32_API(i32)    GetProcessHandleCount(void* hProcess, u32* pdwHandleCount);
 
 /* WGL */
 WIN32_API(void *) wglCreateContext(void *unnamedParam1);
@@ -667,7 +668,7 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
 
 #define KEYS_COUNT 256
 
-/* State Examples: 
+/* State Examples:
   Key Pressed:  state.keys[0x0D].isDown && !state.keys[0x0D].wasDown
   Key Released: !state.keys[0x0D].isDown && state.keys[0x0D].wasDown
 */
@@ -1880,9 +1881,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         u32 glyph_count;
         f32 font_scale = 2.0f;
 
-        text[0] = 0;
+        u32 handle_count = 0;
 
         /* build UI string */
+        text[0] = 0;
         text_append_str(text, text_size, &text_length, "FPS      : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
         text_append_str(text, text_size, &text_length, "\nFRAME    : ");
@@ -1891,6 +1893,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text_append_f64(text, text_size, &text_length, state.iTimeDelta, 6);
         text_append_str(text, text_size, &text_length, "\nTIME     : ");
         text_append_f64(text, text_size, &text_length, state.iTime, 6);
+
+        if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
+        {
+          text_append_str(text, text_size, &text_length, "\nHANDLES  : ");
+          text_append_i32(text, text_size, &text_length, (i32)handle_count);
+        }
+
         text_append_str(text, text_size, &text_length, "\nMOUSE X/Y: ");
         text_append_i32(text, text_size, &text_length, state.mouse_x);
         text_append_str(text, text_size, &text_length, "/");
