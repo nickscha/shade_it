@@ -667,6 +667,10 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
 
 #define KEYS_COUNT 256
 
+/* State Examples: 
+  Key Pressed:  state.keys[0x0D].isDown && !state.keys[0x0D].wasDown
+  Key Released: !state.keys[0x0D].isDown && state.keys[0x0D].wasDown
+*/
 typedef struct win32_key_state
 {
   u8 is_down;
