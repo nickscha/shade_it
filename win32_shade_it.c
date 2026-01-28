@@ -1331,7 +1331,7 @@ SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_na
   static s8 *shader_code_vertex =
       "#version 330 core\n"
       "\n"
-      " vec2 positions[3] = vec2[3](\n"
+      " vec2 quad[3] = vec2[3](\n"
       "  vec2(-1.0, -1.0),\n"
       "  vec2( 3.0, -1.0),\n"
       "  vec2(-1.0,  3.0)\n"
@@ -1339,7 +1339,7 @@ SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_na
       "\n"
       "void main()\n"
       "{\n"
-      "  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);\n"
+      "  gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0);\n"
       "}\n";
 
   u32 size = 0;
@@ -1412,13 +1412,17 @@ SHADE_IT_API void opengl_shader_font_load(shade_it_shader_font *shader)
       "FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
       "}\n";
 
-  if (opengl_shader_create(&shader->program, shader_font_code_vertex, shader_font_code_fragment))
+  u32 new_program = 0;
+
+  if (opengl_shader_create(&new_program, shader_font_code_vertex, shader_font_code_fragment))
   {
     /* If there has been already a shader created delete the old one */
     if (shader->created)
     {
       glDeleteProgram(shader->program);
     }
+
+    shader->program = new_program;
 
     glUseProgram(shader->program);
 
