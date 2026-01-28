@@ -1389,15 +1389,14 @@ SHADE_IT_API void opengl_shader_font_load(shade_it_shader_font *shader)
   static s8 *shader_font_code_vertex =
       "#version 330 core\n"
       "layout(location = 0) in vec2 aPos;\n"
-      "layout(location = 1) in vec2 iPos;\n"
-      "layout(location = 2) in float iGlyph;\n"
+      "layout(location = 1) in vec3 iGlyph;\n"
       "uniform vec3 iRes;\n"
       "uniform vec4 iTeI;\n"
       "out vec2 vUV;\n"
       "void main() {\n"
-      "vec2 p = iPos + aPos * (vec2(iTeI.z, iTeI.w));\n"
+      "vec2 p = iGlyph.xy + aPos * (vec2(iTeI.z, iTeI.w));\n"
       "gl_Position = vec4((p.x / iRes.x) * 2.0 - 1.0, (p.y / iRes.y) * 2.0 - 1.0, 0.0, 1.0);\n"
-      "vUV = vec2((iGlyph + aPos.x) * iTeI.z / iTeI.x, 1.0 - aPos.y * iTeI.w / iTeI.y);\n"
+      "vUV = vec2((iGlyph.z + aPos.x) * iTeI.z / iTeI.x, 1.0 - aPos.y * iTeI.w / iTeI.y);\n"
       "}\n";
 
   static s8 *shader_font_code_fragment =
@@ -1600,15 +1599,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     glBindBuffer(GL_ARRAY_BUFFER, glyph_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glyphs), glyphs, GL_DYNAMIC_DRAW);
 
-    /* iPos (location = 1) */
+    /* iGlyph (location = 1) */
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)0);
     glVertexAttribDivisor(1, 1);
-
-    /* iGlyph (location = 2) */
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)(sizeof(f32) * 2));
-    glVertexAttribDivisor(2, 1);
 
     glBindVertexArray(0);
   }
