@@ -920,7 +920,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       if (vKey < KEYS_COUNT)
       {
         win32_key_state *key = &state->keys[vKey];
-        key->was_down = key->is_down;
+        /*key->was_down = key->is_down;*/
         key->is_down = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
       }
     }
@@ -1605,7 +1605,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   state.running = 1;
-  state.window_title = "shade_it v0.5 (press F1 to show information)";
+  state.window_title = "shade_it v0.5 (press F1 to show/hide information)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
@@ -1732,6 +1732,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start;
     i64 time_start_fps_cap;
     i64 time_last;
+    u8 ui_enabled = 0;
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
 
@@ -1794,6 +1795,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       {
         MSG message = {0};
+        u32 i;
+
+        for (i = 0; i < KEYS_COUNT; ++i)
+        {
+          state.keys[i].was_down = state.keys[i].is_down;
+        }
 
         while (PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
         {
@@ -1870,8 +1877,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
 
+      if (state.keys[0x70].is_down && !state.keys[0x70].was_down) /* F1 */
+      {
+        ui_enabled = !ui_enabled;
+      }
+
       /* UI/Font renderning when F1 key is pressed */
-      if (state.keys[0x70].is_down)
+      if (ui_enabled)
       {
         s8 text[256];
         u32 text_size = sizeof(text);
