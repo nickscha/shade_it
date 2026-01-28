@@ -983,10 +983,11 @@ SHADE_IT_API i32 character_to_font_index(s8 c)
   if (c >= '0' && c <= '9')  return 26 + (c - '0');
   if (c == ':') return 36;
   if (c == '%') return 37;
-  if (c == '+') return 38;
-  if (c == '-') return 39;
-  if (c == '.') return 40;
-  if (c == ' ') return 41;
+  if (c == '/') return 38;
+  if (c == '+') return 39;
+  if (c == '-') return 40;
+  if (c == '.') return 41;
+  if (c == ' ') return 42;
 
   return -1;
 }
