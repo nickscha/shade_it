@@ -363,6 +363,7 @@ WIN32_API(void)   glBindTexture(u32 target, u32 texture);
 WIN32_API(void)   glTexImage2D(u32 target, i32 level, i32 internalformat, i32 width, i32 height, i32 border, i32 format, u32 type, void *pixels);
 WIN32_API(void)   glTexParameteri(u32 target, u32 pname, i32 param);
 WIN32_API(void)   glPixelStorei(u32 pname, i32 param);
+WIN32_API(void)   glBlendFunc(u32 sfactor, u32 dfactor);
 
 /* clang-format on */
 
@@ -430,6 +431,9 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_RED 0x1903
 #define GL_R8 0x8229
 #define GL_TEXTURE0 0x84C0
+#define GL_BLEND 0x0BE2
+#define GL_SRC_ALPHA 0x0302
+#define GL_ONE_MINUS_SRC_ALPHA 0x0303
 
 typedef u32 (*PFNGLCREATESHADERPROC)(u32 shaderType);
 static PFNGLCREATESHADERPROC glCreateShader;
@@ -1327,6 +1331,7 @@ typedef struct shader_font
   i32 loc_iResolution;
   i32 loc_iTextureInfo;
   i32 loc_iTexture;
+  i32 loc_iFontScale;
 
 } shader_font;
 
@@ -1399,30 +1404,36 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
       "layout(location = 0) in vec2 aPos;\n"
       "layout(location = 1) in vec3 iGlyph;\n"
       "uniform vec3 iRes;\n"
-      "uniform vec4 iTeI;\n"
+      "uniform vec4 iTi;\n"
+      "uniform float iFs;\n"
       "out vec2 vUV;\n"
-      "void main() {\n"
-      "vec2 p = iGlyph.xy + aPos * (vec2(iTeI.z, iTeI.w));\n"
-      "gl_Position = vec4((p.x / iRes.x) * 2.0 - 1.0, (p.y / iRes.y) * 2.0 - 1.0, 0.0, 1.0);\n"
-      "vUV = vec2((iGlyph.z + aPos.x) * iTeI.z / iTeI.x, 1.0 - aPos.y * iTeI.w / iTeI.y);\n"
+      "void main()\n"
+      "{\n"
+      "float gi = iGlyph.z;\n"
+      "float cols = iTi.x / iTi.z;\n"
+      "vec2 pp = iGlyph.xy + aPos * vec2(iTi.z,iTi.w) * iFs;\n"
+      "vec2 ndc = (pp / iRes.xy) * 2.0 - 1.0;\n"
+      "ndc.y = -ndc.y;\n"
+      "gl_Position = vec4(ndc, 0.0, 1.0);\n"
+      "vUV = vec2((mod(gi, cols) + aPos.x) * iTi.z / iTi.x, (floor(gi / cols) + aPos.y) * iTi.w / iTi.y);\n"
       "}\n";
 
   static s8 *shader_font_code_fragment =
       "#version 330 core\n"
       "in vec2 vUV;\n"
-      "out vec4 FragColor;\n"
       "uniform sampler2D iTexture;\n"
+      "out vec4 FragColor;\n"
       "void main()\n"
       "{\n"
-      "float glyph = texture(iTexture, vUV).r;\n"
-      "if (glyph < 0.5) discard;\n"
-      "FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+      "    float glyph = texture(iTexture, vUV).r;\n"
+      "    FragColor = vec4(1.0, 1.0, 1.0, glyph);\n"
       "}\n";
 
   if (opengl_shader_load(&shader->header, shader_font_code_vertex, shader_font_code_fragment))
   {
     shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iRes");
-    shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTeI");
+    shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTi");
+    shader->loc_iFontScale = glGetUniformLocation(shader->header.program, "iFs");
     shader->loc_iTexture = glGetUniformLocation(shader->header.program, "iTexture");
   }
 }
@@ -1554,19 +1565,20 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     u32 quad_vbo;
     u32 glyph_vbo;
     f32 x_offset = 10.0f;
-    f32 y_offset = (f32)state.window_height - (SHADE_IT_FONT_GLYPH_HEIGHT + x_offset);
+    f32 y_offset = 10.0f;
+    f32 font_scale = 2.0f;
 
     glyph glyphs[4];
     glyphs[0].x = x_offset;
     glyphs[0].y = y_offset;
     glyphs[0].glyph_index = (f32)character_to_font_index('F');
-    glyphs[1].x = x_offset + SHADE_IT_FONT_GLYPH_WIDTH;
+    glyphs[1].x = x_offset + font_scale * SHADE_IT_FONT_GLYPH_WIDTH;
     glyphs[1].y = y_offset;
     glyphs[1].glyph_index = (f32)character_to_font_index('P');
-    glyphs[2].x = x_offset + SHADE_IT_FONT_GLYPH_WIDTH * 2;
+    glyphs[2].x = x_offset + font_scale * SHADE_IT_FONT_GLYPH_WIDTH * 2;
     glyphs[2].y = y_offset;
     glyphs[2].glyph_index = (f32)character_to_font_index('S');
-    glyphs[3].x = x_offset + SHADE_IT_FONT_GLYPH_WIDTH * 3;
+    glyphs[3].x = x_offset + font_scale * SHADE_IT_FONT_GLYPH_WIDTH * 3;
     glyphs[3].y = y_offset;
     glyphs[3].glyph_index = (f32)character_to_font_index(':');
 
@@ -1590,8 +1602,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)0);
     glVertexAttribDivisor(1, 1);
-
-    glBindVertexArray(0);
   }
 
   {
@@ -1740,12 +1750,18 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* UI/Font renderning when F1 key is pressed */
       if (state.keys[0x70].is_down)
       {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         glUseProgram(font_shader.header.program);
         glUniform3f(font_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
         glUniform4f(font_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
         glUniform1i(font_shader.loc_iTexture, 0);
+        glUniform1f(font_shader.loc_iFontScale, 2.0f);
         glBindVertexArray(font_vao);
         glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, 4);
+
+        glDisable(GL_BLEND);
       }
 
       SwapBuffers(state.dc);
