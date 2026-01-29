@@ -908,10 +908,11 @@ typedef struct win32_shade_it_state
   f32 window_clear_color_r;
   f32 window_clear_color_a;
 
-  i32 iFrame;     /* Frames processed count               */
-  f64 iTime;      /* Total elapsed time in seconds        */
-  f64 iTimeDelta; /* Current render frame time in seconds */
-  f64 iFrameRate; /* Frame Rate per second                */
+  i32 iFrame;        /* Frames processed count               */
+  f64 iTime;         /* Total elapsed time in seconds        */
+  f64 iTimeDelta;    /* Current render frame time in seconds */
+  f64 iFrameRate;    /* Frame Rate per second                */
+  f64 iFrameRateRaw; /* Frame Rate per second raw (no cap)   */
 
   u8 running;
   u8 window_minimized;
@@ -1756,7 +1757,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   {
     /* Generate a dummy vao with no buffer */
-
     glGenVertexArrays(1, &main_vao);
     glBindVertexArray(main_vao);
 
@@ -1835,11 +1835,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
     while (state.running)
     {
+      i64 time_now;
+
       /******************************/
       /* Timing                     */
       /******************************/
       {
-        i64 time_now;
         QueryPerformanceCounter(&time_now);
 
         state.iTimeDelta = (f64)(time_now - time_last) / (f64)perf_freq;
@@ -1991,6 +1992,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text[0] = 0;
         text_append_str(text, text_size, &text_length, "FPS       : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
+        text_append_str(text, text_size, &text_length, "\nFPS RAW   : ");
+        text_append_f64(text, text_size, &text_length, state.iFrameRateRaw, 2);
         text_append_str(text, text_size, &text_length, "\nFRAME     : ");
         text_append_i32(text, text_size, &text_length, state.iFrame);
         text_append_str(text, text_size, &text_length, "\nDELTA     : ");
@@ -2054,6 +2057,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       }
 
       SwapBuffers(state.dc);
+
+      /* Measure RAW FPS (rendering without cap)*/
+      {
+        i64 time_render_now;
+        QueryPerformanceCounter(&time_render_now);
+        state.iFrameRateRaw = 1.0 / ((f64)(time_render_now - time_last) / (f64)perf_freq);
+      }
 
       /******************************/
       /* Frame Rate Limiting        */
