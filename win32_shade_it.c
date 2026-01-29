@@ -712,6 +712,40 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
   }
 }
 
+SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_resolution_timer(void)
+{
+  void *winmm = LoadLibraryA("Winmm.dll");
+
+  if (winmm)
+  {
+    typedef u32(__stdcall * timeBeginPeriodProc)(u32);
+    timeBeginPeriodProc timeBeginPeriod;
+
+    u32 res = 0;
+
+    *(void **)(&timeBeginPeriod) = GetProcAddress(winmm, "timeBeginPeriod");
+
+    if (!timeBeginPeriod)
+    {
+      win32_print("[win32] cannot load timeBeginPeriod from Winmm.dll\n");
+      return 0;
+    }
+
+    res = timeBeginPeriod(1);
+
+    FreeLibrary(winmm);
+
+    /* TIMERR_NOCANDO */
+    if (res == 97)
+    {
+      win32_print("[win32] cannot set timeBeginPeriod(1)\n");
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 #define KEYS_COUNT 256
 
 /* State Examples:
@@ -1729,6 +1763,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   win32_enable_dpi_awareness();
 
   /******************************/
+  /* HighRes timer for Sleep(1) */
+  /******************************/
+  win32_enable_high_resolution_timer();
+
+  /******************************/
   /* Load XInput Controller     */
   /******************************/
   if (!win32_load_xinput())
@@ -2094,9 +2133,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         if (remaining > 0.0)
         {
           /* Sleep most of it (milliseconds) */
-          if (remaining > 0.002)
+          if (remaining > 0.0005)
           {
-            u32 sleep_ms = (u32)((remaining - 0.001) * 1000.0);
+            u32 sleep_ms = (u32)((remaining - 0.00025) * 1000.0);
 
             if (sleep_ms > 0)
             {
