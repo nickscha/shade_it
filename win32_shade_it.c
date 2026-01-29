@@ -1991,40 +1991,44 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         /* build UI string */
         text[0] = 0;
-        text_append_str(text, text_size, &text_length, "FPS       : ");
+        text_append_str(text, text_size, &text_length, "FPS        : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
-        text_append_str(text, text_size, &text_length, "\nFPS RAW   : ");
+        text_append_str(text, text_size, &text_length, "\nFPS RAW    : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRateRaw, 2);
-        text_append_str(text, text_size, &text_length, "\nFRAME     : ");
+        text_append_str(text, text_size, &text_length, "\nFRAME      : ");
         text_append_i32(text, text_size, &text_length, state.iFrame);
-        text_append_str(text, text_size, &text_length, "\nDELTA     : ");
+        text_append_str(text, text_size, &text_length, "\nDELTA      : ");
         text_append_f64(text, text_size, &text_length, state.iTimeDelta, 6);
-        text_append_str(text, text_size, &text_length, "\nTIME      : ");
+        text_append_str(text, text_size, &text_length, "\nTIME       : ");
         text_append_f64(text, text_size, &text_length, state.iTime, 6);
-        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y : ");
+        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y  : ");
         text_append_i32(text, text_size, &text_length, state.mouse_x);
         text_append_str(text, text_size, &text_length, "/");
         text_append_i32(text, text_size, &text_length, state.mouse_y);
-        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y : ");
+        text_append_str(text, text_size, &text_length, "\nMOUSE DX/DY: ");
+        text_append_i32(text, text_size, &text_length, state.mouse_dx);
+        text_append_str(text, text_size, &text_length, "/");
+        text_append_i32(text, text_size, &text_length, state.mouse_dy);
+        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y  : ");
         text_append_i32(text, text_size, &text_length, (i32)state.window_width);
         text_append_str(text, text_size, &text_length, "/");
         text_append_i32(text, text_size, &text_length, (i32)state.window_height);
 
         if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
         {
-          text_append_str(text, text_size, &text_length, "\nHANDLES   : ");
+          text_append_str(text, text_size, &text_length, "\nHANDLES    : ");
           text_append_i32(text, text_size, &text_length, (i32)handle_count);
         }
 
         if (win32_process_memory(&mem))
         {
-          text_append_str(text, text_size, &text_length, "\nMEM WORK  : ");
+          text_append_str(text, text_size, &text_length, "\nMEM WORK   : ");
           text_append_i32(text, text_size, &text_length, (i32)(mem.working_set / (1024)));
 
-          text_append_str(text, text_size, &text_length, "\nMEM PEAK  : ");
+          text_append_str(text, text_size, &text_length, "\nMEM PEAK   : ");
           text_append_i32(text, text_size, &text_length, (i32)(mem.peak_working_set / (1024)));
 
-          text_append_str(text, text_size, &text_length, "\nMEM COMMIT: ");
+          text_append_str(text, text_size, &text_length, "\nMEM COMMIT : ");
           text_append_i32(text, text_size, &text_length, (i32)(mem.private_bytes / (1024)));
         }
 
