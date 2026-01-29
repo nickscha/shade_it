@@ -124,18 +124,14 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define RID_INPUT 0x10000003
 #define RIM_TYPEMOUSE 0
 #define RIM_TYPEKEYBOARD 1
+#define RIM_TYPEHID 2
 #define RI_KEY_BREAK 1
-
-#define HIGH_PRIORITY_CLASS 0x80
-#define THREAD_PRIORITY_HIGHEST 2
-#define ES_SYSTEM_REQUIRED ((u32)0x00000001)
-#define ES_DISPLAY_REQUIRED ((u32)0x00000002)
-#define ES_CONTINUOUS ((u32)0x80000000)
+#define RIDI_DEVICEINFO 0x2000000b
 
 typedef void *(*PROC)(void);
 typedef i64 (*WNDPROC)(void *, u32, u64, i64);
 
-typedef struct CREATESTRUCTA
+typedef struct tagCREATESTRUCTA
 {
   void *lpCreateParams;
   void *hInstance;
@@ -149,7 +145,7 @@ typedef struct CREATESTRUCTA
   s8 *lpszName;
   s8 *lpszClass;
   u32 dwExStyle;
-} CREATESTRUCTA;
+} CREATESTRUCTA, *LPCREATESTRUCTA;
 
 typedef struct WNDCLASSA
 {
@@ -165,21 +161,21 @@ typedef struct WNDCLASSA
   s8 *lpszClassName;
 } WNDCLASSA;
 
-typedef struct POINT
+typedef struct tagPOINT
 {
   i32 x;
   i32 y;
 } POINT;
 
-typedef struct RECT
+typedef struct tagRECT
 {
   i32 left;
   i32 top;
   i32 right;
   i32 bottom;
-} RECT;
+} RECT, *PRECT, *LPRECT;
 
-typedef struct MSG
+typedef struct tagMSG
 {
   void *hwnd;
   u32 message;
@@ -188,9 +184,9 @@ typedef struct MSG
   u32 time;
   POINT pt;
   u32 lPrivate;
-} MSG;
+} MSG, *LPMSG;
 
-typedef struct PIXELFORMATDESCRIPTOR
+typedef struct tagPIXELFORMATDESCRIPTOR
 {
   u16 nSize;
   u16 nVersion;
@@ -218,7 +214,7 @@ typedef struct PIXELFORMATDESCRIPTOR
   u32 dwLayerMask;
   u32 dwVisibleMask;
   u32 dwDamageMask;
-} PIXELFORMATDESCRIPTOR;
+} PIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
 
 typedef struct FILETIME
 {
@@ -243,6 +239,12 @@ typedef struct RAWINPUTDEVICE
   u32 dwFlags;
   void *hwndTarget;
 } RAWINPUTDEVICE;
+
+typedef struct RAWINPUTDEVICELIST
+{
+  void *hDevice;
+  u32 dwType;
+} RAWINPUTDEVICELIST;
 
 typedef struct RAWINPUTHEADER
 {
@@ -291,20 +293,21 @@ typedef struct RAWINPUT
   } data;
 } RAWINPUT;
 
-typedef struct PROCESS_MEMORY_COUNTERS_EX
+typedef struct RID_DEVICE_INFO_HID
 {
-  u32 cb;
-  u32 PageFaultCount;
-  u64 PeakWorkingSetSize;
-  u64 WorkingSetSize;
-  u64 QuotaPeakPagedPoolUsage;
-  u64 QuotaPagedPoolUsage;
-  u64 QuotaPeakNonPagedPoolUsage;
-  u64 QuotaNonPagedPoolUsage;
-  u64 PagefileUsage;
-  u64 PeakPagefileUsage;
-  u64 PrivateUsage;
-} PROCESS_MEMORY_COUNTERS_EX;
+  u32 dwVendorId;
+  u32 dwProductId;
+  u32 dwVersionNumber;
+  u16 usUsagePage;
+  u16 usUsage;
+} RID_DEVICE_INFO_HID;
+
+typedef struct RID_DEVICE_INFO
+{
+  u32 cbSize;
+  u32 dwType;
+  RID_DEVICE_INFO_HID hid;
+} RID_DEVICE_INFO;
 
 /* clang-format off */
 WIN32_API(void *) GetStdHandle(u32 nStdHandle);
@@ -323,8 +326,8 @@ WIN32_API(i32)    CompareFileTime(FILETIME *lpFileTime1, FILETIME *lpFileTime2);
 WIN32_API(i32)    GetFileAttributesExA(s8 *lpFileName, u32 fInfoLevelId, void *lpFileInformation);
 WIN32_API(void)   Sleep(u32 dwMilliseconds);
 WIN32_API(void)   ExitProcess(u32 uExitCode);
-WIN32_API(i32)    PeekMessageA(MSG* lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
-WIN32_API(i32)    GetMessageA(MSG* lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
+WIN32_API(i32)    PeekMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
+WIN32_API(i32)    GetMessageA(LPMSG lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
 WIN32_API(i32)    TranslateMessage(MSG *lpMsg);
 WIN32_API(i64)    DispatchMessageA(MSG *lpMsg);
 WIN32_API(i64)    DefWindowProcA(void *hWnd, u32 Msg, u64 wParam, i64 lParam);
@@ -340,24 +343,19 @@ WIN32_API(i32)    ReleaseDC(void *hWnd, void *hDC);
 WIN32_API(i32)    SwapBuffers(void *unnamedParam1);
 WIN32_API(i32)    ChoosePixelFormat(void *hdc, PIXELFORMATDESCRIPTOR *ppfd);
 WIN32_API(i32)    SetPixelFormat(void *hdc, i32 format, PIXELFORMATDESCRIPTOR *ppfd);
-WIN32_API(i32)    DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, PIXELFORMATDESCRIPTOR* ppfd);
+WIN32_API(i32)    DescribePixelFormat(void *hdc, i32 iPixelFormat, u32 nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
 WIN32_API(i32)    ShowWindow(void *hWnd, i32 nCmdShow);
 WIN32_API(i32)    DestroyWindow(void *hWnd);
-WIN32_API(i32)    AdjustWindowRect(RECT* lpRect, u32 dwStyle, i32 bMenu);
+WIN32_API(i32)    AdjustWindowRect(LPRECT lpRect, u32 dwStyle, i32 bMenu);
 WIN32_API(i32)    QueryPerformanceCounter(i64 *lpPerformanceCount);
 WIN32_API(i32)    QueryPerformanceFrequency(i64 *lpFrequency);
 WIN32_API(s8 *)   GetCommandLineA(void);
 WIN32_API(i32)    RegisterRawInputDevices(RAWINPUTDEVICE* pRawInputDevices, u32 uiNumDevices, u32 cbSize);
 WIN32_API(u32)    GetRawInputData(void *hRawInput, u32 uiCommand, void *pData, u32 *pcbSize, u32 cbSizeHeader);
+WIN32_API(u32)    GetRawInputDeviceList(RAWINPUTDEVICELIST* pRawInputDeviceList,u32* puiNumDevices,u32 cbSize);
+WIN32_API(u32)    GetRawInputDeviceInfoA(void* hDevice, u32 uiCommand, void* pData, u32* pcbSize);
 WIN32_API(i32)    GetCursorPos(POINT *lpPoint);
 WIN32_API(i32)    ScreenToClient(void *hWnd, POINT *lpPoint);
-
-WIN32_API(void *) GetCurrentProcess(void);
-WIN32_API(i32)    SetPriorityClass(void *hProcess, u32 dwPriorityClass);
-WIN32_API(void *) GetCurrentThread(void);
-WIN32_API(i32)    SetThreadPriority(void *hThread, i32 nPriority);
-WIN32_API(u32)    SetThreadExecutionState(u32 esFlags);
-WIN32_API(i32)    GetProcessHandleCount(void* hProcess, u32* pdwHandleCount);
 
 /* WGL */
 WIN32_API(void *) wglCreateContext(void *unnamedParam1);
@@ -374,13 +372,6 @@ WIN32_API(void)   glViewport(i32 x, i32 y, i32 width, i32 height);
 WIN32_API(void)   glEnable(u32 cap);
 WIN32_API(void)   glDisable(u32 cap);
 WIN32_API(u8 *)   glGetString(u32 name);
-WIN32_API(void)   glGenTextures(i32 n, u32 *textures);
-WIN32_API(void)   glBindTexture(u32 target, u32 texture);
-WIN32_API(void)   glTexImage2D(u32 target, i32 level, i32 internalformat, i32 width, i32 height, i32 border, i32 format, u32 type, void *pixels);
-WIN32_API(void)   glTexParameteri(u32 target, u32 pname, i32 param);
-WIN32_API(void)   glPixelStorei(u32 pname, i32 param);
-WIN32_API(void)   glBlendFunc(u32 sfactor, u32 dfactor);
-
 /* clang-format on */
 
 /* #############################################################################
@@ -417,10 +408,7 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 
 /* OpenGL functions directly part of opengl32 lib */
 #define GL_TRUE 1
-#define GL_FALSE 0
-#define GL_FLOAT 0x1406
 #define GL_TRIANGLES 0x0004
-#define GL_TRIANGLE_FAN 0x0006
 #define GL_COLOR_BUFFER_BIT 0x00004000
 #define GL_FRAMEBUFFER_SRGB 0x8DB9
 #define GL_MULTISAMPLE 0x809D
@@ -431,26 +419,6 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_VENDOR 0x1F00
 #define GL_RENDERER 0x1F01
 #define GL_VERSION 0x1F02
-#define GL_STREAM_DRAW 0x88E0
-#define GL_STATIC_DRAW 0x88E4
-#define GL_DYNAMIC_DRAW 0x88E8
-#define GL_ARRAY_BUFFER 0x8892
-
-#define GL_UNSIGNED_BYTE 0x1401
-#define GL_TEXTURE_2D 0x0DE1
-#define GL_NEAREST 0x2600
-#define GL_TEXTURE_MIN_FILTER 0x2801
-#define GL_TEXTURE_MAG_FILTER 0x2800
-#define GL_TEXTURE_WRAP_S 0x2802
-#define GL_TEXTURE_WRAP_T 0x2803
-#define GL_CLAMP_TO_EDGE 0x812F
-#define GL_UNPACK_ALIGNMENT 0x0CF5
-#define GL_RED 0x1903
-#define GL_R8 0x8229
-#define GL_TEXTURE0 0x84C0
-#define GL_BLEND 0x0BE2
-#define GL_SRC_ALPHA 0x0302
-#define GL_ONE_MINUS_SRC_ALPHA 0x0303
 
 typedef u32 (*PFNGLCREATESHADERPROC)(u32 shaderType);
 static PFNGLCREATESHADERPROC glCreateShader;
@@ -515,30 +483,6 @@ static PFNGLUNIFORM3FPROC glUniform3f;
 typedef void (*PFNGLUNIFORM4FPROC)(i32 location, f32 v0, f32 v1, f32 v2, f32 v3);
 static PFNGLUNIFORM4FPROC glUniform4f;
 
-typedef void (*PFNGLACTIVETEXTUREPROC)(u32 texture);
-static PFNGLACTIVETEXTUREPROC glActiveTexture;
-
-typedef void (*PFNGLGENBUFFERSPROC)(i32 n, u32 *buffers);
-static PFNGLGENBUFFERSPROC glGenBuffers;
-
-typedef void (*PFNGLBINDBUFFERPROC)(u32 target, u32 buffer);
-static PFNGLBINDBUFFERPROC glBindBuffer;
-
-typedef void (*PFNGLBUFFERDATAPROC)(u32 target, i32 size, void *data, u32 usage);
-static PFNGLBUFFERDATAPROC glBufferData;
-
-typedef void (*PFNGLENABLEVERTEXATTRIBARRAYPROC)(u32 index);
-static PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
-
-typedef void (*PFNGLVERTEXATTRIBPOINTERPROC)(u32 index, i32 size, u32 type, u8 normalized, i32 stride, void *pointer);
-static PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
-
-typedef void (*PFNGLVERTEXATTRIBDIVISORPROC)(u32 index, u32 divisor);
-static PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
-
-typedef void (*PFNGLDRAWARRAYSINSTANCED)(i32 mode, i32 first, i32 count, u32 primcount);
-static PFNGLDRAWARRAYSINSTANCED glDrawArraysInstanced;
-
 /* #############################################################################
  * # Main Code
  * #############################################################################
@@ -584,6 +528,21 @@ SHADE_IT_API void win32_print(s8 *str)
 
     WriteFile(log_file, str, len, &written, 0);
   }
+}
+
+SHADE_IT_API void win32_print_u32_hex(u32 v)
+{
+  s8 buf[9];
+  i32 i;
+
+  for (i = 7; i >= 0; --i)
+  {
+    u32 d = v & 0xF;
+    buf[i] = (d < 10) ? (s8)('0' + d) : (s8)('A' + (d - 10));
+    v >>= 4;
+  }
+  buf[8] = 0;
+  win32_print(buf);
 }
 
 SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
@@ -657,37 +616,6 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
   return GetFileAttributesExA(file, 0, &fad) ? fad.ftLastWriteTime : empty;
 }
 
-SHADE_IT_API SHADE_IT_INLINE void win32_enable_high_priority(void)
-{
-  /* TODO(nickscha): Check integrated plus discrete GPU
-   *
-   * It was noticed that on a device with a integrated GPU (intel)
-   * and a discrete GPU (NVIDIA) the fans were spinning high even
-   * though there was only 1.5% total CPU and 2.4% GPU usage.
-   * Check carefully when these priority functions can be set safely.
-   *
-  if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS))
-  {
-    return 1;
-  }
-
-  if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST))
-  {
-    return 1;
-  }
-
-  if (!SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED))
-  {
-    return 1;
-  }
-  */
-  (void)HIGH_PRIORITY_CLASS;
-  (void)THREAD_PRIORITY_HIGHEST;
-  (void)ES_CONTINUOUS;
-  (void)ES_DISPLAY_REQUIRED;
-  (void)ES_SYSTEM_REQUIRED;
-}
-
 SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
 {
   void *shcore = LoadLibraryA("Shcore.dll");
@@ -714,10 +642,6 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
 
 #define KEYS_COUNT 256
 
-/* State Examples:
-  Key Pressed:  state.keys[0x0D].isDown && !state.keys[0x0D].wasDown
-  Key Released: !state.keys[0x0D].isDown && state.keys[0x0D].wasDown
-*/
 typedef struct win32_key_state
 {
   u8 is_down;
@@ -839,64 +763,6 @@ SHADE_IT_API SHADE_IT_INLINE f32 win32_process_trigger(u8 value)
   return value > XINPUT_GAMEPAD_TRIGGER_THRESHOLD ? (f32)value / 255.0f : 0.0f;
 }
 
-typedef struct process_memory_info
-{
-  u64 private_bytes; /* Commit charge (what you asked for) */
-  u64 working_set;   /* RAM currently used */
-  u64 peak_working_set;
-} process_memory_info;
-
-u8 win32_process_memory(process_memory_info *out)
-{
-  typedef i32(__stdcall * GetProcessMemoryInfo_Fn)(void *, PROCESS_MEMORY_COUNTERS_EX *, u32);
-  static GetProcessMemoryInfo_Fn pGetMemInfo = 0;
-  static i32 initialized = 0;
-
-  PROCESS_MEMORY_COUNTERS_EX pmc;
-
-  if (!initialized)
-  {
-    /* Win7+ */
-    void *kernel32 = LoadLibraryA("kernel32.dll");
-
-    if (kernel32)
-    {
-      *(void **)(&pGetMemInfo) = GetProcAddress(kernel32, "K32GetProcessMemoryInfo");
-    }
-
-    /* Vista and older */
-    if (!pGetMemInfo)
-    {
-      void *psapi = LoadLibraryA("psapi.dll");
-
-      if (psapi)
-      {
-        *(void **)(&pGetMemInfo) = GetProcAddress(psapi, "GetProcessMemoryInfo");
-      }
-    }
-
-    initialized = 1;
-  }
-
-  if (!pGetMemInfo)
-  {
-    return 0;
-  }
-
-  pmc.cb = sizeof(pmc);
-
-  if (!pGetMemInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-  {
-    return 0;
-  }
-
-  out->private_bytes = (u64)pmc.PrivateUsage;
-  out->working_set = (u64)pmc.WorkingSetSize;
-  out->peak_working_set = (u64)pmc.PeakWorkingSetSize;
-
-  return 1;
-}
-
 typedef struct win32_shade_it_state
 {
 
@@ -951,7 +817,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     SetWindowLongPtrA(window, GWLP_USERDATA, (i64)state);
 
     {
-      RAWINPUTDEVICE rid[2] = {0};
+      RAWINPUTDEVICE rid[3] = {0};
 
       rid[0].usUsagePage = 0x01;
       rid[0].usUsage = 0x06;            /* Keyboard */
@@ -963,7 +829,12 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       rid[1].dwFlags = RIDEV_INPUTSINK;
       rid[1].hwndTarget = window;
 
-      if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0])))
+      rid[2].usUsagePage = 0x01;
+      rid[2].usUsage = 0x04; /* Joystick / Game controller */
+      rid[2].dwFlags = RIDEV_INPUTSINK;
+      rid[2].hwndTarget = window;
+
+      if (!RegisterRawInputDevices(rid, 3, sizeof(rid[0])))
       {
         win32_print("[win32] Failed to register RAWINPUT device\n");
       }
@@ -1024,7 +895,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       if (vKey < KEYS_COUNT)
       {
         win32_key_state *key = &state->keys[vKey];
-        /*key->was_down = key->is_down;*/
+        key->was_down = key->is_down;
         key->is_down = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
       }
     }
@@ -1038,6 +909,30 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       state->mouse_dx = dx;
       state->mouse_dy = dy;
     }
+    else if (raw->header.dwType == RIM_TYPEHID)
+    {
+      RAWHID *hid = &raw->data.hid;
+
+      u32 reportSize = hid->dwSizeHid;
+      u8 *reportData = hid->bRawData;
+      void *deviceHandle = raw->header.hDevice;
+
+      (void)hid;
+      (void)reportSize;
+      (void)reportData;
+      (void)deviceHandle;
+
+      /*
+      win32_print("[HID] report: ");
+      for (i = 0; i < reportSize && i < 8; ++i)
+      {
+        char buf[8];
+        snprintf(buf, 8, "%02X ", reportData[i]);
+        win32_print(buf);
+      }
+      win32_print("\n");
+      */
+    }
   }
   break;
   default:
@@ -1048,233 +943,6 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   }
 
   return (result);
-}
-
-/* 1-bit bitmap, packed, row-major */
-/* width=258, height=7 */
-/* Charset: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:%+-. " */
-#define SHADE_IT_FONT_WIDTH 258
-#define SHADE_IT_FONT_HEIGHT 7
-#define SHADE_IT_FONT_GLYPH_WIDTH 6
-#define SHADE_IT_FONT_GLYPH_HEIGHT 7
-
-static u8 shade_it_font[] = {
-    0x73, 0xC7, 0x38, 0xFB, 0xE7, 0x22, 0x71, 0xE8, 0xA0, 0x8B, 0x27, 0x3C,
-    0x73, 0xC7, 0x3E, 0x8A, 0x28, 0xA2, 0x8B, 0xE7, 0x08, 0x73, 0xC9, 0x3E,
-    0x73, 0xE7, 0x1C, 0x03, 0x20, 0x00, 0x00, 0x00, 0x22, 0x8A, 0x29, 0x20,
-    0x82, 0x28, 0x88, 0x12, 0x48, 0x36, 0xCA, 0x28, 0xA2, 0x8A, 0x22, 0x22,
-    0x8A, 0x28, 0xA2, 0x0A, 0x26, 0x22, 0x0A, 0x48, 0x22, 0x0A, 0x28, 0x80,
-    0xD0, 0x22, 0x00, 0x00, 0x08, 0xA2, 0x82, 0x28, 0x20, 0x82, 0x22, 0x04,
-    0xA2, 0x0A, 0xAA, 0x8A, 0x28, 0xA2, 0x80, 0x88, 0xA2, 0x89, 0x45, 0x04,
-    0x98, 0x80, 0x82, 0x92, 0x08, 0x04, 0x8A, 0x20, 0x04, 0x10, 0x80, 0x00,
-    0x03, 0xEF, 0x20, 0x8B, 0xCF, 0x2E, 0xF8, 0x81, 0x30, 0x82, 0xAA, 0xA2,
-    0xF2, 0x2F, 0x1C, 0x22, 0x28, 0xAA, 0x20, 0x82, 0x2A, 0x20, 0x47, 0x3E,
-    0xF3, 0xC2, 0x1C, 0x78, 0x82, 0x08, 0xF9, 0xE0, 0x00, 0x8A, 0x28, 0x22,
-    0x82, 0x08, 0xA2, 0x22, 0x4A, 0x20, 0x8A, 0xA8, 0xA0, 0xAA, 0x60, 0x88,
-    0x89, 0x4A, 0x94, 0x21, 0x0C, 0x88, 0x20, 0x21, 0x02, 0x88, 0x88, 0x82,
-    0x01, 0x04, 0x08, 0x00, 0x00, 0x22, 0x8A, 0x29, 0x20, 0x82, 0x28, 0x88,
-    0x92, 0x48, 0x22, 0x9A, 0x28, 0x24, 0x8A, 0x22, 0x22, 0x51, 0xC8, 0x88,
-    0x82, 0x22, 0x10, 0x08, 0x40, 0xA2, 0x22, 0x20, 0x88, 0x5A, 0x02, 0x00,
-    0x30, 0x08, 0xBC, 0x73, 0x8F, 0xA0, 0x72, 0x27, 0x18, 0x8B, 0xE8, 0xA6,
-    0x72, 0x06, 0xA2, 0x70, 0x87, 0x08, 0x52, 0x22, 0x3E, 0x71, 0xCF, 0xBC,
-    0x13, 0xC7, 0x08, 0x71, 0xC0, 0x26, 0x00, 0x00, 0x0C, 0x00};
-
-/* clang-format off */
-/* Charset: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:%+-. " */
-SHADE_IT_API i32 font_char_to_glyph_index(s8 c)
-{
-  /* Convert to uppercase */
-  if (c >= 'a' && c <= 'z')
-  {
-    c = (s8)(c - 'a' + 'A');
-  }
-
-  if (c >= 'A' && c <= 'Z') return c - 'A';
-  if (c >= '0' && c <= '9')  return 26 + (c - '0');
-  if (c == ':') return 36;
-  if (c == '%') return 37;
-  if (c == '/') return 38;
-  if (c == '+') return 39;
-  if (c == '-') return 40;
-  if (c == '.') return 41;
-  if (c == ' ') return 42;
-
-  return -1;
-}
-/* clang-format on */
-
-SHADE_IT_API void unpack_bitmap_1bit_to_r8(
-    u8 *dst, /* width * height bytes */
-    u8 *src, /* packed bits */
-    u32 width,
-    u32 height)
-{
-  u32 x;
-  u32 y;
-  u32 bit_index;
-  u32 byte_index;
-  u32 bit;
-  u8 b;
-
-  for (y = 0; y < height; ++y)
-  {
-    for (x = 0; x < width; ++x)
-    {
-      bit_index = y * width + x;
-      byte_index = bit_index >> 3;
-      bit = 7 - (bit_index & 7);
-
-      b = (src[byte_index] >> bit) & 1;
-
-      /* 1 = black, 0 = white */
-      dst[bit_index] = b ? 0xFF : 0x00;
-    }
-  }
-}
-
-SHADE_IT_API void text_append_char(s8 *text, u32 text_size, u32 *len, s8 c)
-{
-  if (*len + 1 >= text_size)
-  {
-    return;
-  }
-  text[*len] = c;
-  (*len)++;
-  text[*len] = 0;
-}
-
-SHADE_IT_API void text_append_str(s8 *text, u32 text_size, u32 *len, s8 *s)
-{
-  while (*s)
-  {
-    text_append_char(text, text_size, len, *s);
-    s++;
-  }
-}
-
-SHADE_IT_API void text_append_i32(s8 *text, u32 text_size, u32 *len, i32 v)
-{
-  s8 buf[12];
-  i32 i = 0;
-  u32 u;
-
-  if (v < 0)
-  {
-    text_append_char(text, text_size, len, '-');
-    u = (u32)(-v);
-  }
-  else
-  {
-    u = (u32)v;
-  }
-
-  if (u == 0)
-  {
-    text_append_char(text, text_size, len, '0');
-    return;
-  }
-
-  while (u && i < (i32)sizeof(buf))
-  {
-    buf[i++] = (s8)('0' + (u % 10));
-    u /= 10;
-  }
-
-  while (i--)
-  {
-    text_append_char(text, text_size, len, buf[i]);
-  }
-}
-
-SHADE_IT_API void text_append_f64(s8 *text, u32 text_size, u32 *len, f64 v, i32 decimals)
-{
-  i32 i;
-  f64 frac;
-
-  if (v < 0.0)
-  {
-    text_append_char(text, text_size, len, '-');
-    v = -v;
-  }
-
-  /* integer part */
-  text_append_i32(text, text_size, len, (i32)v);
-  text_append_char(text, text_size, len, '.');
-
-  frac = v - (f64)((i32)v);
-
-  for (i = 0; i < decimals; ++i)
-  {
-    frac *= 10.0;
-    text_append_char(text, text_size, len, (s8)('0' + ((i32)frac)));
-    frac -= (f64)((i32)frac);
-  }
-}
-
-SHADE_IT_API void text_null_terminate(s8 *text, u32 text_size, u32 *text_length)
-{
-  if (*text_length >= text_size)
-  {
-    text[text_size - 1] = 0;
-    *text_length = text_size - 1;
-    return;
-  }
-
-  text[*text_length] = 0;
-}
-
-typedef struct glyph
-{
-  f32 x;
-  f32 y;
-  f32 glyph_index;
-} glyph;
-
-SHADE_IT_API u32 text_to_glyphs(
-    s8 *text,
-    glyph *out_glyphs,
-    u32 max_glyphs,
-    f32 start_x,
-    f32 start_y,
-    f32 font_scale)
-{
-  u32 count = 0;
-  f32 x = start_x;
-  f32 y = start_y;
-
-  while (*text && count < max_glyphs)
-  {
-    s8 c = *text++;
-    i32 gi = font_char_to_glyph_index(c);
-
-    if (c == '\n')
-    {
-      x = start_x;
-      y += ((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT;
-      continue;
-    }
-
-    /* skip spaces explicitly */
-    if (c == ' ')
-    {
-      x += (f32)SHADE_IT_FONT_GLYPH_WIDTH * font_scale;
-      continue;
-    }
-
-    if (gi < 0)
-    {
-      continue;
-    }
-
-    out_glyphs[count].x = x;
-    out_glyphs[count].y = y;
-    out_glyphs[count].glyph_index = (f32)gi;
-    count++;
-
-    x += (f32)SHADE_IT_FONT_GLYPH_WIDTH * font_scale;
-  }
-
-  return count;
 }
 
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
@@ -1352,8 +1020,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
       window_class.lpszClassName,
       window_style,
       0, 0,
-      rect.right - rect.left,
-      rect.bottom - rect.top,
+      (i32)state->window_width, (i32)state->window_height,
       0, 0,
       window_instance,
       state /* Pass pointer to user data to the window callback */
@@ -1399,14 +1066,6 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
   glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
   glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
-  glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
-  glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers");
-  glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
-  glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
-  glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glEnableVertexAttribArray");
-  glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
-  glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)wglGetProcAddress("glVertexAttribDivisor");
-  glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCED)wglGetProcAddress("glDrawArraysInstanced");
 
 #pragma GCC diagnostic pop
 
@@ -1496,7 +1155,7 @@ SHADE_IT_API i32 opengl_shader_compile(
 
   if (!success)
   {
-    s8 infoLog[1024];
+    char infoLog[1024];
     glGetShaderInfoLog(shaderId, 1024, 0, infoLog);
 
     win32_print("[opengl] shader compilation error:\n");
@@ -1542,7 +1201,7 @@ SHADE_IT_API i32 opengl_shader_create(
 
   if (!success)
   {
-    s8 infoLog[1024];
+    char infoLog[1024];
     glGetProgramInfoLog(*shader_program, 1024, 0, infoLog);
 
     win32_print("[opengl] program creation error:\n");
@@ -1555,15 +1214,10 @@ SHADE_IT_API i32 opengl_shader_create(
   return 1;
 }
 
-typedef struct shader_header
+typedef struct shade_it_shader
 {
   u32 created;
   u32 program;
-} shader_header;
-
-typedef struct shader_main
-{
-  shader_header header;
 
   i32 loc_iResolution;
   i32 loc_iTime;
@@ -1571,123 +1225,63 @@ typedef struct shader_main
   i32 loc_iFrame;
   i32 loc_iFrameRate;
   i32 loc_iMouse;
-  i32 loc_iTextureInfo;
-  i32 loc_iTexture;
 
-} shader_main;
+} shade_it_shader;
 
-typedef struct shader_font
-{
-  shader_header header;
-
-  i32 loc_iResolution;
-  i32 loc_iTextureInfo;
-  i32 loc_iTexture;
-  i32 loc_iFontScale;
-
-} shader_font;
-
-SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_vertex, s8 *shader_code_fragment)
-{
-  u32 new_program;
-
-  if (!opengl_shader_create(&new_program, shader_code_vertex, shader_code_fragment))
-  {
-    win32_print("[opengl] compile failed, keeping old shader is present\n");
-    return 0;
-  }
-
-  /* If there has been already a shader created delete the old one */
-  if (shader->created)
-  {
-    glDeleteProgram(shader->program);
-  }
-
-  shader->program = new_program;
-
-  glUseProgram(shader->program);
-
-  shader->created = 1;
-
-  return 1;
-}
-
-SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader_file_name)
+SHADE_IT_API void opengl_shader_load(shade_it_shader *shader, s8 *shader_file_name)
 {
   static s8 *shader_code_vertex =
       "#version 330 core\n"
-      "vec2 quad[3] = vec2[3](\n"
-      " vec2(-1.0, -1.0),\n"
-      " vec2( 3.0, -1.0),\n"
-      " vec2(-1.0,  3.0)\n"
+      "\n"
+      " vec2 positions[3] = vec2[3](\n"
+      "  vec2(-1.0, -1.0),\n"
+      "  vec2( 3.0, -1.0),\n"
+      "  vec2(-1.0,  3.0)\n"
       ");\n"
+      "\n"
       "void main()\n"
       "{\n"
-      "  gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0);\n"
+      "  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);\n"
       "}\n";
 
   u32 size = 0;
-  u8 *shader_code_fragment = win32_file_read(shader_file_name, &size);
+  u8 *src = win32_file_read(shader_file_name, &size);
+  u32 new_program = 0;
 
-  if (!shader_code_fragment || size < 1)
+  if (!src || size < 1)
   {
     return;
   }
 
-  if (opengl_shader_load(&shader->header, shader_code_vertex, (s8 *)shader_code_fragment))
+  if (opengl_shader_create(&new_program, shader_code_vertex, (s8 *)src))
   {
-    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iResolution");
-    shader->loc_iTime = glGetUniformLocation(shader->header.program, "iTime");
-    shader->loc_iTimeDelta = glGetUniformLocation(shader->header.program, "iTimeDelta");
-    shader->loc_iFrame = glGetUniformLocation(shader->header.program, "iFrame");
-    shader->loc_iFrameRate = glGetUniformLocation(shader->header.program, "iFrameRate");
-    shader->loc_iMouse = glGetUniformLocation(shader->header.program, "iMouse");
-    shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTextureInfo");
-    shader->loc_iTexture = glGetUniformLocation(shader->header.program, "iTexture");
+    /* If there has been already a shader created delete the old one */
+    if (shader->created)
+    {
+      glDeleteProgram(shader->program);
+    }
+
+    shader->program = new_program;
+
+    glUseProgram(shader->program);
+
+    shader->loc_iResolution = glGetUniformLocation(shader->program, "iResolution");
+    shader->loc_iTime = glGetUniformLocation(shader->program, "iTime");
+    shader->loc_iTimeDelta = glGetUniformLocation(shader->program, "iTimeDelta");
+    shader->loc_iFrame = glGetUniformLocation(shader->program, "iFrame");
+    shader->loc_iFrameRate = glGetUniformLocation(shader->program, "iFrameRate");
+    shader->loc_iMouse = glGetUniformLocation(shader->program, "iMouse");
+
+    shader->created = 1;
+
+    win32_print("[opengl] fragment shader loaded\n");
+  }
+  else
+  {
+    win32_print("[opengl] compile failed, keeping old shader\n");
   }
 
-  VirtualFree(shader_code_fragment, 0, MEM_RELEASE);
-}
-
-SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
-{
-  static s8 *shader_font_code_vertex =
-      "#version 330 core\n"
-      "layout(location = 0) in vec2 aPos;\n"
-      "layout(location = 1) in vec3 iGlyph;\n"
-      "uniform vec3 iRes;\n"
-      "uniform vec4 iTi;\n"
-      "uniform float iFs;\n"
-      "out vec2 vUV;\n"
-      "void main()\n"
-      "{\n"
-      "float gi = iGlyph.z;\n"
-      "float cols = iTi.x / iTi.z;\n"
-      "vec2 pp = iGlyph.xy + aPos * vec2(iTi.z,iTi.w) * iFs;\n"
-      "vec2 ndc = (pp / iRes.xy) * 2.0 - 1.0;\n"
-      "ndc.y = -ndc.y;\n"
-      "gl_Position = vec4(ndc, 0.0, 1.0);\n"
-      "vUV = vec2((mod(gi, cols) + aPos.x) * iTi.z / iTi.x, (floor(gi / cols) + aPos.y) * iTi.w / iTi.y);\n"
-      "}\n";
-
-  static s8 *shader_font_code_fragment =
-      "#version 330 core\n"
-      "in vec2 vUV;\n"
-      "uniform sampler2D iTexture;\n"
-      "out vec4 FragColor;\n"
-      "void main()\n"
-      "{\n"
-      "    float glyph = texture(iTexture, vUV).r;\n"
-      "    FragColor = vec4(1.0, 1.0, 1.0, glyph);\n"
-      "}\n";
-
-  if (opengl_shader_load(&shader->header, shader_font_code_vertex, shader_font_code_fragment))
-  {
-    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iRes");
-    shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTi");
-    shader->loc_iFontScale = glGetUniformLocation(shader->header.program, "iFs");
-    shader->loc_iTexture = glGetUniformLocation(shader->header.program, "iTexture");
-  }
+  VirtualFree(src, 0, MEM_RELEASE);
 }
 
 SHADE_IT_API i32 start(i32 argc, u8 **argv)
@@ -1696,12 +1290,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   s8 *fragment_shader_file_name = "shade_it.fs";
 
   win32_shade_it_state state = {0};
-  shader_main main_shader = {0};
-  shader_font font_shader = {0};
-
-  u32 main_vao;
-  u32 font_vao;
-  u32 glyph_vbo;
+  shade_it_shader main_shader = {0};
 
   if (argv && argc > 1)
   {
@@ -1709,18 +1298,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   state.running = 1;
-  state.window_title = "shade_it v0.5 (press F1 to show/hide information)";
+  state.window_title = "shade_it v0.5";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
   state.window_handle = 0;
   state.dc = 0;
   state.target_frames_per_second = 60; /* 60 FPS, 0 = unlimited */
-
-  /******************************/
-  /* Set Process Priorities     */
-  /******************************/
-  win32_enable_high_priority();
 
   /******************************/
   /* Set DPI aware mode         */
@@ -1756,66 +1340,16 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   {
     /* Generate a dummy vao with no buffer */
-
-    glGenVertexArrays(1, &main_vao);
-    glBindVertexArray(main_vao);
+    u32 vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
     /* Load Fragment Shader source code from file */
     win32_print("[opengl] load shader file: ");
     win32_print(fragment_shader_file_name);
     win32_print("\n");
 
-    opengl_shader_load_shader_main(&main_shader, fragment_shader_file_name);
-    opengl_shader_load_shader_font(&font_shader);
-  }
-
-  {
-    /* Generate font texture */
-    u8 shade_it_font_pixels[SHADE_IT_FONT_WIDTH * SHADE_IT_FONT_HEIGHT];
-    u32 tex;
-
-    /* OpenGL does not allow 1bit packed texture data so we convert each bit to 1 byte */
-    unpack_bitmap_1bit_to_r8(shade_it_font_pixels, shade_it_font, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT);
-
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, 0, GL_RED, GL_UNSIGNED_BYTE, shade_it_font_pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glActiveTexture(GL_TEXTURE0);
-  }
-
-  {
-    static f32 quad_vertices[] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f};
-
-    u32 quad_vbo;
-
-    glGenVertexArrays(1, &font_vao);
-    glBindVertexArray(font_vao);
-
-    glGenBuffers(1, &quad_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
-
-    /* aPos */
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(f32), (void *)0);
-    glVertexAttribDivisor(0, 0);
-
-    glGenBuffers(1, &glyph_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, glyph_vbo);
-
-    /* iGlyph (location = 1) */
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(f32) * 3, (void *)0);
-    glVertexAttribDivisor(1, 1);
+    opengl_shader_load(&main_shader, fragment_shader_file_name);
   }
 
   {
@@ -1823,7 +1357,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start;
     i64 time_start_fps_cap;
     i64 time_last;
-    u8 ui_enabled = 0;
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
 
@@ -1873,7 +1406,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         if (CompareFileTime(&fs_now, &fs_last) != 0)
         {
-          opengl_shader_load_shader_main(&main_shader, fragment_shader_file_name);
+          opengl_shader_load(&main_shader, fragment_shader_file_name);
           fs_last = fs_now;
 
           /* Reset iTime elapsed seconds on hot reload */
@@ -1886,12 +1419,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       {
         MSG message = {0};
-        u32 i;
-
-        for (i = 0; i < KEYS_COUNT; ++i)
-        {
-          state.keys[i].was_down = state.keys[i].is_down;
-        }
 
         while (PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
         {
@@ -1913,7 +1440,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* Get XInput controller */
       if (XInputGetState)
       {
-        /* TODO(nickscha): Query up to 4 controllers connected */
         XINPUT_STATE xinput_state = {0};
         u32 controller_index = 0;
         u32 result = XInputGetState(controller_index, &xinput_state);
@@ -1946,6 +1472,43 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         }
       }
 
+      /* Get Raw Input Gamepad / Joysticks */
+      {
+        RAWINPUTDEVICELIST ridList[16];
+        u32 numDevices = 0;
+
+        u32 i;
+
+        GetRawInputDeviceList(ridList, &numDevices, sizeof(RAWINPUTDEVICELIST));
+
+        for (i = 0; i < numDevices; ++i)
+        {
+          if (ridList[i].dwType == RIM_TYPEHID)
+          {
+            u32 size;
+
+            RID_DEVICE_INFO info = {0};
+            info.cbSize = sizeof(info);
+
+            size = sizeof(info);
+
+            if (GetRawInputDeviceInfoA(ridList[i].hDevice, RIDI_DEVICEINFO, &info, &size) > 0)
+            {
+              win32_print("[HID] Device info: ");
+              win32_print("VendorID: ");
+              win32_print_u32_hex(info.hid.dwVendorId);
+              win32_print(" ProductID: ");
+              win32_print_u32_hex(info.hid.dwProductId);
+              win32_print(" UsagePage: ");
+              win32_print_u32_hex(info.hid.usUsagePage);
+              win32_print(" Usage: ");
+              win32_print_u32_hex(info.hid.usUsage);
+              win32_print("\n");
+            }
+          }
+        }
+      }
+
       /******************************/
       /* Rendering                  */
       /******************************/
@@ -1955,104 +1518,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         state.window_size_changed = 0;
       }
       glClear(GL_COLOR_BUFFER_BIT);
-
-      glUseProgram(main_shader.header.program);
       glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
       glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
       glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
       glUniform1i(main_shader.loc_iFrame, state.iFrame);
       glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
       glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, 1.0f, 1.0f);
-      glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
-      glUniform1i(main_shader.loc_iTexture, 0);
-      glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
-
-      if (state.keys[0x70].is_down && !state.keys[0x70].was_down) /* F1 */
-      {
-        ui_enabled = !ui_enabled;
-      }
-
-      /* UI/Font renderning when F1 key is pressed */
-      if (ui_enabled)
-      {
-        s8 text[512];
-        u32 text_size = sizeof(text);
-        u32 text_length = 0;
-
-        glyph glyphs[512];
-        u32 glyph_count;
-        f32 font_scale = 2.0f;
-
-        u32 handle_count = 0;
-        process_memory_info mem = {0};
-
-        /* build UI string */
-        text[0] = 0;
-        text_append_str(text, text_size, &text_length, "FPS       : ");
-        text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
-        text_append_str(text, text_size, &text_length, "\nFRAME     : ");
-        text_append_i32(text, text_size, &text_length, state.iFrame);
-        text_append_str(text, text_size, &text_length, "\nDELTA     : ");
-        text_append_f64(text, text_size, &text_length, state.iTimeDelta, 6);
-        text_append_str(text, text_size, &text_length, "\nTIME      : ");
-        text_append_f64(text, text_size, &text_length, state.iTime, 6);
-        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y : ");
-        text_append_i32(text, text_size, &text_length, state.mouse_x);
-        text_append_str(text, text_size, &text_length, "/");
-        text_append_i32(text, text_size, &text_length, state.mouse_y);
-        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y : ");
-        text_append_i32(text, text_size, &text_length, (i32)state.window_width);
-        text_append_str(text, text_size, &text_length, "/");
-        text_append_i32(text, text_size, &text_length, (i32)state.window_height);
-
-        if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
-        {
-          text_append_str(text, text_size, &text_length, "\nHANDLES   : ");
-          text_append_i32(text, text_size, &text_length, (i32)handle_count);
-        }
-
-        if (win32_process_memory(&mem))
-        {
-          text_append_str(text, text_size, &text_length, "\nMEM WORK  : ");
-          text_append_i32(text, text_size, &text_length, (i32)(mem.working_set / (1024)));
-
-          text_append_str(text, text_size, &text_length, "\nMEM PEAK  : ");
-          text_append_i32(text, text_size, &text_length, (i32)(mem.peak_working_set / (1024)));
-
-          text_append_str(text, text_size, &text_length, "\nMEM COMMIT: ");
-          text_append_i32(text, text_size, &text_length, (i32)(mem.private_bytes / (1024)));
-        }
-
-        text_null_terminate(text, text_size, &text_length);
-
-        glyph_count = text_to_glyphs(
-            text,
-            glyphs,
-            sizeof(glyphs) / sizeof(glyphs[0]),
-            10.0f, /* x */
-            10.0f, /* y */
-            font_scale);
-
-        /* TODO(nickscha): Measure GPU difference of STREAM_DRAW vs DYNAMIC_DRAW */
-        (void)GL_DYNAMIC_DRAW;
-
-        glBufferData(GL_ARRAY_BUFFER, (i32)(glyph_count * sizeof(glyph)), glyphs, GL_STREAM_DRAW);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        glUseProgram(font_shader.header.program);
-        glUniform3f(font_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
-        glUniform4f(font_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
-        glUniform1i(font_shader.loc_iTexture, 0);
-        glUniform1f(font_shader.loc_iFontScale, font_scale);
-        glBindVertexArray(font_vao);
-        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, glyph_count);
-
-        glDisable(GL_BLEND);
-      }
-
       SwapBuffers(state.dc);
 
       /******************************/
