@@ -839,6 +839,8 @@ typedef struct win32_controller_state
   f32 trigger_left_value;
   f32 trigger_right_value;
 
+  u8 connected;
+
 } win32_controller_state;
 
 #define XINPUT_GAMEPAD_DPAD_UP 0x0001
@@ -2011,6 +2013,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         u32 controller_index = 0;
         u32 result = XInputGetState(controller_index, &xinput_state);
 
+        state.controller.connected = result == 0;
+
         if (result == 0)
         {
           XINPUT_GAMEPAD *gp = &xinput_state.Gamepad;
@@ -2126,6 +2130,15 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
           text_append_str(text, text_size, &text_length, "\nMEM COMMIT : ");
           text_append_i32(text, text_size, &text_length, (i32)(mem.private_bytes / (1024)));
+        }
+
+        if (state.controller.connected)
+        {
+          text_append_str(text, text_size, &text_length, "\nCONTROLLER : CONNECTED");
+        }
+        else
+        {
+          text_append_str(text, text_size, &text_length, "\nCONTROLLER : NOT FOUND");
         }
 
         text_null_terminate(text, text_size, &text_length);
