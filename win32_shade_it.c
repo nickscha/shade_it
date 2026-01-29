@@ -1879,6 +1879,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
           /* Reset iTime elapsed seconds on hot reload */
           QueryPerformanceCounter(&time_start);
+          state.iFrame = 0;
         }
       }
 
