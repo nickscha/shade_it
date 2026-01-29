@@ -98,6 +98,17 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
         col = mix(col, vec3(0.0), mask);            // overlay black font
     }
 
+    /* Debug green border */
+    float border = 1.0;
+
+    if (fragCoord.x < border ||
+        fragCoord.y < border ||
+        fragCoord.x >= iResolution.x - border ||
+        fragCoord.y >= iResolution.y - border)
+    {
+        col = vec3(0.0, 1.0, 0.0);
+    }
+
     outColor = vec4(col, 1.0);
 }
 
