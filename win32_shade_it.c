@@ -132,6 +132,8 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define ES_DISPLAY_REQUIRED ((u32)0x00000002)
 #define ES_CONTINUOUS ((u32)0x80000000)
 
+#define TH32CS_SNAPTHREAD 0x00000004
+
 typedef void *(*PROC)(void);
 typedef i64 (*WNDPROC)(void *, u32, u64, i64);
 
@@ -306,6 +308,17 @@ typedef struct PROCESS_MEMORY_COUNTERS_EX
   u64 PrivateUsage;
 } PROCESS_MEMORY_COUNTERS_EX;
 
+typedef struct THREADENTRY32
+{
+  u32 dwSize;
+  u32 cntUsage;
+  u32 th32ThreadID;
+  u32 th32OwnerProcessID;
+  i32 tpBasePri;
+  i32 tpDeltaPri;
+  u32 dwFlags;
+} THREADENTRY32;
+
 /* clang-format off */
 WIN32_API(void *) GetStdHandle(u32 nStdHandle);
 WIN32_API(i32)    CloseHandle(void *hObject);
@@ -353,11 +366,15 @@ WIN32_API(i32)    GetCursorPos(POINT *lpPoint);
 WIN32_API(i32)    ScreenToClient(void *hWnd, POINT *lpPoint);
 
 WIN32_API(void *) GetCurrentProcess(void);
+WIN32_API(u32)    GetCurrentProcessId(void);
 WIN32_API(i32)    SetPriorityClass(void *hProcess, u32 dwPriorityClass);
 WIN32_API(void *) GetCurrentThread(void);
 WIN32_API(i32)    SetThreadPriority(void *hThread, i32 nPriority);
 WIN32_API(u32)    SetThreadExecutionState(u32 esFlags);
 WIN32_API(i32)    GetProcessHandleCount(void* hProcess, u32* pdwHandleCount);
+WIN32_API(void *) CreateToolhelp32Snapshot(u32 dwFlags, u32 th32ProcessID);
+WIN32_API(i32)    Thread32First(void* hSnapshot, THREADENTRY32* lpte);
+WIN32_API(i32)    Thread32Next(void* hSnapshot, THREADENTRY32* lpte);
 
 /* WGL */
 WIN32_API(void *) wglCreateContext(void *unnamedParam1);
@@ -744,6 +761,36 @@ SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_resolution_timer(void)
   }
 
   return 1;
+}
+
+SHADE_IT_API i32 win32_process_thread_count(void)
+{
+  u32 pid = GetCurrentProcessId();
+  void *snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+  THREADENTRY32 te;
+  i32 count = 0;
+
+  if (snapshot == INVALID_HANDLE)
+  {
+    return 0;
+  }
+
+  te.dwSize = sizeof(te);
+
+  if (Thread32First(snapshot, &te))
+  {
+    do
+    {
+      if (te.th32OwnerProcessID == pid)
+      {
+        count++;
+      }
+    } while (Thread32Next(snapshot, &te));
+  }
+
+  CloseHandle(snapshot);
+
+  return count;
 }
 
 #define KEYS_COUNT 256
@@ -2058,6 +2105,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text_append_i32(text, text_size, &text_length, (i32)state.window_width);
         text_append_str(text, text_size, &text_length, "/");
         text_append_i32(text, text_size, &text_length, (i32)state.window_height);
+
+        text_append_str(text, text_size, &text_length, "\nTHREADS    : ");
+        text_append_i32(text, text_size, &text_length, win32_process_thread_count());
 
         if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
         {
