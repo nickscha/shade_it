@@ -1910,6 +1910,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start_fps_cap;
     i64 time_last;
     u8 ui_enabled = 0;
+    i32 thread_count = win32_process_thread_count();
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
 
@@ -2068,6 +2069,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* UI/Font renderning when F1 key is pressed */
       if (ui_enabled)
       {
+
         s8 text[512];
         u32 text_size = sizeof(text);
         u32 text_length = 0;
@@ -2105,9 +2107,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text_append_i32(text, text_size, &text_length, (i32)state.window_width);
         text_append_str(text, text_size, &text_length, "/");
         text_append_i32(text, text_size, &text_length, (i32)state.window_height);
-
         text_append_str(text, text_size, &text_length, "\nTHREADS    : ");
-        text_append_i32(text, text_size, &text_length, win32_process_thread_count());
+        text_append_i32(text, text_size, &text_length, thread_count);
 
         if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
         {
