@@ -546,12 +546,12 @@ static PFNGLDRAWARRAYSINSTANCED glDrawArraysInstanced;
 #ifdef _MSC_VER
 #pragma function(memset)
 #endif
-void *memset(void *dest, int c, unsigned int count)
+void *memset(void *dest, i32 c, u32 count)
 {
-  char *bytes = (char *)dest;
+  s8 *bytes = (s8 *)dest;
   while (count--)
   {
-    *bytes++ = (char)c;
+    *bytes++ = (s8)c;
   }
   return dest;
 }
@@ -2036,6 +2036,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text[0] = 0;
         text_append_str(text, text_size, &text_length, "FPS        : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
+        text_append_str(text, text_size, &text_length, "\nFPS TARGET : ");
+        text_append_f64(text, text_size, &text_length, state.target_frames_per_second, 2);
         text_append_str(text, text_size, &text_length, "\nFPS RAW    : ");
         text_append_f64(text, text_size, &text_length, state.iFrameRateRaw, 2);
         text_append_str(text, text_size, &text_length, "\nFRAME      : ");
