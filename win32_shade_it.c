@@ -1036,8 +1036,8 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       i32 dx = mouse->lLastX;
       i32 dy = mouse->lLastY;
 
-      state->mouse_dx = dx;
-      state->mouse_dy = dy;
+      state->mouse_dx += dx;
+      state->mouse_dy += dy;
     }
   }
   break;
@@ -1894,6 +1894,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         {
           state.keys[i].was_down = state.keys[i].is_down;
         }
+
+        /* Reset accumulated mouse relative speeds every frame before processing new mouse messages */
+        state.mouse_dx = 0;
+        state.mouse_dy = 0;
 
         while (PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
         {
