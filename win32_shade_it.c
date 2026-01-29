@@ -1688,7 +1688,14 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
   /******************************/
   /* Set Process Priorities     */
-  /******************************/
+  /*****************************
+   *
+   * TODO(nickscha): Check integrated plus discrete GPU
+   * It was noticed that on a device with a integrated GPU (intel)
+   * and a discrete GPU (NVIDIA) the fans were spinning high even
+   * though there was only 1.5% total CPU and 2.4% GPU usage.
+   * Check carefully when these priority functions can be set safely.
+   *
   if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS))
   {
     return 1;
@@ -1703,6 +1710,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   {
     return 1;
   }
+  */
+  (void)HIGH_PRIORITY_CLASS;
+  (void)THREAD_PRIORITY_HIGHEST;
+  (void)ES_CONTINUOUS;
+  (void)ES_DISPLAY_REQUIRED;
+  (void)ES_SYSTEM_REQUIRED;
 
   /******************************/
   /* Set DPI aware mode         */
