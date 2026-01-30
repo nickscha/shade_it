@@ -1575,6 +1575,8 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   return 1;
 }
 
+static s8 shader_info_log[1024];
+
 SHADE_IT_API i32 opengl_shader_compile(
     s8 *shaderCode,
     u32 shaderType)
@@ -1588,11 +1590,10 @@ SHADE_IT_API i32 opengl_shader_compile(
 
   if (!success)
   {
-    s8 infoLog[1024];
-    glGetShaderInfoLog(shaderId, 1024, 0, infoLog);
+    glGetShaderInfoLog(shaderId, 1024, 0, shader_info_log);
 
     win32_print("[opengl] shader compilation error:\n");
-    win32_print(infoLog);
+    win32_print(shader_info_log);
     win32_print("\n");
 
     return -1;
@@ -1619,7 +1620,7 @@ SHADE_IT_API i32 opengl_shader_create(
 
   fragment_shader_id = opengl_shader_compile(shader_fragment_code, GL_FRAGMENT_SHADER);
 
-  if (vertex_shader_id == -1)
+  if (fragment_shader_id == -1)
   {
     return 0;
   }
@@ -1634,11 +1635,10 @@ SHADE_IT_API i32 opengl_shader_create(
 
   if (!success)
   {
-    s8 infoLog[1024];
-    glGetProgramInfoLog(*shader_program, 1024, 0, infoLog);
+    glGetProgramInfoLog(*shader_program, 1024, 0, shader_info_log);
 
     win32_print("[opengl] program creation error:\n");
-    win32_print(infoLog);
+    win32_print(shader_info_log);
     win32_print("\n");
 
     return 0;
@@ -1651,6 +1651,7 @@ typedef struct shader_header
 {
   u32 created;
   u32 program;
+  u8 had_failure;
 } shader_header;
 
 typedef struct shader_main
@@ -1686,8 +1687,11 @@ SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_verte
   if (!opengl_shader_create(&new_program, shader_code_vertex, shader_code_fragment))
   {
     win32_print("[opengl] compile failed, keeping old shader is present\n");
+    shader->had_failure = 1;
     return 0;
   }
+
+  shader->had_failure = 0;
 
   /* If there has been already a shader created delete the old one */
   if (shader->created)
@@ -2067,7 +2071,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
       glUniform1i(main_shader.loc_iFrame, state.iFrame);
       glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
-      glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, (f32) state.mouse_dx, (f32) state.mouse_dy);
+      glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, (f32)state.mouse_dx, (f32)state.mouse_dy);
       glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
       glUniform1i(main_shader.loc_iTexture, 0);
       glBindVertexArray(main_vao);
@@ -2155,6 +2159,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text_append_str(text, text_size, &text_length, state.gl_renderer);
         text_append_str(text, text_size, &text_length, "\nGL VERSION : ");
         text_append_str(text, text_size, &text_length, state.gl_version);
+
+        if (main_shader.header.had_failure)
+        {
+          text_append_str(text, text_size, &text_length, "\nGL ERROR FS: ");
+          text_append_str(text, text_size, &text_length, shader_info_log);
+        }
 
         text_null_terminate(text, text_size, &text_length);
 
