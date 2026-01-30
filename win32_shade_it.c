@@ -2067,7 +2067,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
       glUniform1i(main_shader.loc_iFrame, state.iFrame);
       glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
-      glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, 1.0f, 1.0f);
+      glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, (f32) state.mouse_dx, (f32) state.mouse_dy);
       glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
       glUniform1i(main_shader.loc_iTexture, 0);
       glBindVertexArray(main_vao);
