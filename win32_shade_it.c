@@ -1016,6 +1016,10 @@ typedef struct win32_shade_it_state
   win32_key_state keys[KEYS_COUNT];
   win32_controller_state controller;
 
+  s8 *gl_version;
+  s8 *gl_renderer;
+  s8 *gl_vendor;
+
 } win32_shade_it_state;
 
 SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message, u64 wParam, i64 lParam)
@@ -1549,16 +1553,20 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   }
 
   /* Print opengl information */
+  state->gl_vendor = (s8 *)glGetString(GL_VENDOR);
+  state->gl_renderer = (s8 *)glGetString(GL_RENDERER);
+  state->gl_version = (s8 *)glGetString(GL_VERSION);
+
   win32_print("[opengl] vendor  : ");
-  win32_print((s8 *)glGetString(GL_VENDOR));
+  win32_print(state->gl_vendor);
   win32_print("\n");
 
   win32_print("[opengl] renderer: ");
-  win32_print((s8 *)glGetString(GL_RENDERER));
+  win32_print(state->gl_renderer);
   win32_print("\n");
 
   win32_print("[opengl] version : ");
-  win32_print((s8 *)glGetString(GL_VERSION));
+  win32_print(state->gl_version);
   win32_print("\n");
 
   glViewport(0, 0, (i32)state->window_width, (i32)state->window_height);
@@ -2074,11 +2082,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       if (ui_enabled)
       {
 
-        s8 text[512];
+        s8 text[1024];
         u32 text_size = sizeof(text);
         u32 text_length = 0;
 
-        glyph glyphs[512];
+        glyph glyphs[1024];
         u32 glyph_count;
         f32 font_scale = 2.0f;
 
@@ -2140,6 +2148,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         {
           text_append_str(text, text_size, &text_length, "\nCONTROLLER : NOT FOUND");
         }
+
+        text_append_str(text, text_size, &text_length, "\nGL VENDOR  : ");
+        text_append_str(text, text_size, &text_length, state.gl_vendor);
+        text_append_str(text, text_size, &text_length, "\nGL RENDER  : ");
+        text_append_str(text, text_size, &text_length, state.gl_renderer);
+        text_append_str(text, text_size, &text_length, "\nGL VERSION : ");
+        text_append_str(text, text_size, &text_length, state.gl_version);
 
         text_null_terminate(text, text_size, &text_length);
 
