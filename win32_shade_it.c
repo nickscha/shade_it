@@ -2159,12 +2159,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text_append_str(text, text_size, &text_length, state.gl_renderer);
         text_append_str(text, text_size, &text_length, "\nGL VERSION : ");
         text_append_str(text, text_size, &text_length, state.gl_version);
-
-        if (main_shader.header.had_failure)
-        {
-          text_append_str(text, text_size, &text_length, "\nGL ERROR FS: ");
-          text_append_str(text, text_size, &text_length, shader_info_log);
-        }
+        text_append_str(text, text_size, &text_length, "\nGL ERROR FS: ");
+        text_append_str(text, text_size, &text_length, main_shader.header.had_failure ? shader_info_log : "NONE");
 
         text_null_terminate(text, text_size, &text_length);
 
