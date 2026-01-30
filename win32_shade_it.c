@@ -1191,7 +1191,7 @@ SHADE_IT_API i32 font_char_to_glyph_index(s8 c)
 }
 /* clang-format on */
 
-SHADE_IT_API void unpack_bitmap_1bit_to_r8(
+SHADE_IT_API void unpack_1bit_to_8bit(
     u8 *dst, /* width * height bytes */
     u8 *src, /* packed bits */
     u32 width,
@@ -1875,7 +1875,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     u32 tex;
 
     /* OpenGL does not allow 1bit packed texture data so we convert each bit to 1 byte */
-    unpack_bitmap_1bit_to_r8(shade_it_font_pixels, shade_it_font, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT);
+    unpack_1bit_to_8bit(shade_it_font_pixels, shade_it_font, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT);
 
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
