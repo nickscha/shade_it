@@ -1003,6 +1003,9 @@ typedef struct win32_shade_it_state
   u32 window_width;
   u32 window_height;
 
+  u32 window_width_pending;
+  u32 window_height_pending;
+
   f32 window_clear_color_g;
   f32 window_clear_color_b;
   f32 window_clear_color_r;
@@ -1102,8 +1105,8 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     {
       state->window_minimized = 0;
       state->window_size_changed = 1;
-      state->window_width = (u16)(((u64)(lParam)) & 0xffff);          /* Low Word  */
-      state->window_height = (u16)((((u64)(lParam)) >> 16) & 0xffff); /* High Word */
+      state->window_width_pending = (u16)(((u64)(lParam)) & 0xffff);          /* Low Word  */
+      state->window_height_pending = (u16)((((u64)(lParam)) >> 16) & 0xffff); /* High Word */
     }
   }
   break;
@@ -2076,7 +2079,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       if (XInputGetState)
       {
         u32 i = 0;
-
         for (i = 0; i < XINPUT_USER_MAX_COUNT; ++i)
         {
           XINPUT_STATE xinput_state = {0};
@@ -2121,9 +2123,14 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       if (state.window_size_changed)
       {
+        state.window_width = state.window_width_pending;
+        state.window_height = state.window_height_pending;
+
         glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
+
         state.window_size_changed = 0;
       }
+
       glClear(GL_COLOR_BUFFER_BIT);
 
       glUseProgram(main_shader.header.program);
