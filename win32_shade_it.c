@@ -2235,54 +2235,20 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           text_append_f64(text, text_size, &text_length, state.controller.trigger_right_value, 6);
           text_append_str(text, text_size, &text_length, "\nBUTTONS    : ");
 
-          if (state.controller.button_a)
-          {
-            text_append_str(text, text_size, &text_length, "A ");
-          }
-          if (state.controller.button_b)
-          {
-            text_append_str(text, text_size, &text_length, "B ");
-          }
-          if (state.controller.button_x)
-          {
-            text_append_str(text, text_size, &text_length, "X ");
-          }
-          if (state.controller.button_y)
-          {
-            text_append_str(text, text_size, &text_length, "Y ");
-          }
-          if (state.controller.dpad_left)
-          {
-            text_append_str(text, text_size, &text_length, "DLEFT ");
-          }
-          if (state.controller.dpad_right)
-          {
-            text_append_str(text, text_size, &text_length, "DRIGHT ");
-          }
-          if (state.controller.dpad_up)
-          {
-            text_append_str(text, text_size, &text_length, "DUP ");
-          }
-          if (state.controller.dpad_down)
-          {
-            text_append_str(text, text_size, &text_length, "DDOWN ");
-          }
-          if (state.controller.stick_left)
-          {
-            text_append_str(text, text_size, &text_length, "LSTICK ");
-          }
-          if (state.controller.stick_right)
-          {
-            text_append_str(text, text_size, &text_length, "RSTICK ");
-          }
-          if (state.controller.shoulder_left)
-          {
-            text_append_str(text, text_size, &text_length, "LSHOULDER ");
-          }
-          if (state.controller.shoulder_right)
-          {
-            text_append_str(text, text_size, &text_length, "RSHOULDER ");
-          }
+          /* clang-format off */
+          if (state.controller.button_a)       text_append_str(text, text_size, &text_length, "A ");
+          if (state.controller.button_b)       text_append_str(text, text_size, &text_length, "B ");
+          if (state.controller.button_x)       text_append_str(text, text_size, &text_length, "X ");
+          if (state.controller.button_y)       text_append_str(text, text_size, &text_length, "Y ");
+          if (state.controller.dpad_left)      text_append_str(text, text_size, &text_length, "DLEFT ");
+          if (state.controller.dpad_right)     text_append_str(text, text_size, &text_length, "DRIGHT ");
+          if (state.controller.dpad_up)        text_append_str(text, text_size, &text_length, "DUP ");
+          if (state.controller.dpad_down)      text_append_str(text, text_size, &text_length, "DDOWN ");
+          if (state.controller.stick_left)     text_append_str(text, text_size, &text_length, "LSTICK ");
+          if (state.controller.stick_right)    text_append_str(text, text_size, &text_length, "RSTICK ");
+          if (state.controller.shoulder_left)  text_append_str(text, text_size, &text_length, "LSHOULDER ");
+          if (state.controller.shoulder_right) text_append_str(text, text_size, &text_length, "RSHOULDER ");
+          /* clang-format on */
         }
         else
         {
