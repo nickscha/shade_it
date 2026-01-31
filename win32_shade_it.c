@@ -843,7 +843,7 @@ typedef struct win32_controller_state
 
 } win32_controller_state;
 
-/*#define XUSER_MAX_COUNT 4*/
+#define XINPUT_USER_MAX_COUNT 4
 #define XINPUT_GAMEPAD_DPAD_UP 0x0001
 #define XINPUT_GAMEPAD_DPAD_DOWN 0x0002
 #define XINPUT_GAMEPAD_DPAD_LEFT 0x0004
@@ -2021,39 +2021,44 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /* Get XInput controller */
       if (XInputGetState)
       {
-        /* TODO(nickscha): Query up to 4 controllers connected */
-        XINPUT_STATE xinput_state = {0};
-        u32 controller_index = 0;
+        u32 i = 0;
 
-        u32 result = XInputGetState(controller_index, &xinput_state);
-
-        state.controller.connected = result == 0;
-
-        if (state.controller.connected)
+        for (i = 0; i < XINPUT_USER_MAX_COUNT; ++i)
         {
-          XINPUT_GAMEPAD *gp = &xinput_state.Gamepad;
-          state.controller.button_a = (gp->wButtons & XINPUT_GAMEPAD_A) ? 1 : 0;
-          state.controller.button_b = (gp->wButtons & XINPUT_GAMEPAD_B) ? 1 : 0;
-          state.controller.button_x = (gp->wButtons & XINPUT_GAMEPAD_X) ? 1 : 0;
-          state.controller.button_y = (gp->wButtons & XINPUT_GAMEPAD_Y) ? 1 : 0;
-          state.controller.shoulder_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1 : 0;
-          state.controller.shoulder_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1 : 0;
-          state.controller.dpad_up = (gp->wButtons & XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0;
-          state.controller.dpad_down = (gp->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0;
-          state.controller.dpad_left = (gp->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0;
-          state.controller.dpad_right = (gp->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0;
-          state.controller.start = (gp->wButtons & XINPUT_GAMEPAD_START) ? 1 : 0;
-          state.controller.back = (gp->wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0;
-          state.controller.stick_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
-          state.controller.stick_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
-          state.controller.trigger_left_value = win32_process_trigger(gp->bLeftTrigger);
-          state.controller.trigger_right_value = win32_process_trigger(gp->bRightTrigger);
-          state.controller.trigger_left = state.controller.trigger_left_value > 0.0f ? 1 : 0;
-          state.controller.trigger_right = state.controller.trigger_right_value > 0.0f ? 1 : 0;
-          state.controller.stick_left_x = win32_process_thumbstick(gp->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-          state.controller.stick_left_y = win32_process_thumbstick(gp->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-          state.controller.stick_right_x = win32_process_thumbstick(gp->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
-          state.controller.stick_right_y = win32_process_thumbstick(gp->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+          XINPUT_STATE xinput_state = {0};
+          u32 result = XInputGetState(i, &xinput_state);
+
+          state.controller.connected = result == 0;
+
+          if (state.controller.connected)
+          {
+            XINPUT_GAMEPAD *gp = &xinput_state.Gamepad;
+            state.controller.button_a = (gp->wButtons & XINPUT_GAMEPAD_A) ? 1 : 0;
+            state.controller.button_b = (gp->wButtons & XINPUT_GAMEPAD_B) ? 1 : 0;
+            state.controller.button_x = (gp->wButtons & XINPUT_GAMEPAD_X) ? 1 : 0;
+            state.controller.button_y = (gp->wButtons & XINPUT_GAMEPAD_Y) ? 1 : 0;
+            state.controller.shoulder_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1 : 0;
+            state.controller.shoulder_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1 : 0;
+            state.controller.dpad_up = (gp->wButtons & XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0;
+            state.controller.dpad_down = (gp->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0;
+            state.controller.dpad_left = (gp->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0;
+            state.controller.dpad_right = (gp->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0;
+            state.controller.start = (gp->wButtons & XINPUT_GAMEPAD_START) ? 1 : 0;
+            state.controller.back = (gp->wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0;
+            state.controller.stick_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
+            state.controller.stick_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
+            state.controller.trigger_left_value = win32_process_trigger(gp->bLeftTrigger);
+            state.controller.trigger_right_value = win32_process_trigger(gp->bRightTrigger);
+            state.controller.trigger_left = state.controller.trigger_left_value > 0.0f ? 1 : 0;
+            state.controller.trigger_right = state.controller.trigger_right_value > 0.0f ? 1 : 0;
+            state.controller.stick_left_x = win32_process_thumbstick(gp->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+            state.controller.stick_left_y = win32_process_thumbstick(gp->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+            state.controller.stick_right_x = win32_process_thumbstick(gp->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+            state.controller.stick_right_y = win32_process_thumbstick(gp->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+
+            /* TODO(nickscha): For now we support only one controller connected */
+            break;
+          }
         }
       }
 
