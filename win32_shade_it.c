@@ -798,6 +798,15 @@ SHADE_IT_API i32 win32_process_thread_count(void)
 /* State Examples:
   Key Pressed:  state.keys[0x0D].isDown && !state.keys[0x0D].wasDown
   Key Released: !state.keys[0x0D].isDown && state.keys[0x0D].wasDown
+  
+  Example of a Toggle switch (when pressed first toggles on, when pressed second time toggles off):
+
+  static u8 ui_enabled = 0;
+
+  if (state.keys[0x70].is_down && !state.keys[0x70].was_down)
+  {
+    ui_enabled = !ui_enabled;
+  }
 */
 typedef struct win32_key_state
 {
@@ -911,9 +920,13 @@ SHADE_IT_API f32 win32_process_thumbstick(i16 value, i16 deadzone)
   f32 result = 0.0f;
 
   if (value > deadzone)
+  {
     result = (f32)(value - deadzone) / (32767.0f - deadzone);
+  }
   else if (value < -deadzone)
+  {
     result = (f32)(value + deadzone) / (32768.0f - deadzone);
+  }
 
   return result;
 }
@@ -1039,6 +1052,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     state = (win32_shade_it_state *)cs->lpCreateParams;
     SetWindowLongPtrA(window, GWLP_USERDATA, (i64)state);
 
+    /* Setup raw input for mouse and keyboard */
     {
       RAWINPUTDEVICE rid[2] = {0};
 
@@ -1092,9 +1106,10 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   break;
   case WM_INPUT:
   {
-    u32 dwSize = 0;
     static u8 rawBuffer[128];
     RAWINPUT *raw = (RAWINPUT *)rawBuffer;
+
+    u32 dwSize = 0;
 
     GetRawInputData((RAWINPUT *)lParam, RID_INPUT, (void *)0, &dwSize, sizeof(RAWINPUTHEADER));
 
@@ -2283,7 +2298,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         QueryPerformanceCounter(&time_end);
 
         frame_time = (f64)(time_end - time_start_fps_cap) / (f64)perf_freq;
-
         remaining = target_frame_time - frame_time;
 
         if (remaining > 0.0)
