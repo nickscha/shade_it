@@ -843,6 +843,7 @@ typedef struct win32_controller_state
 
 } win32_controller_state;
 
+/*#define XUSER_MAX_COUNT 4*/
 #define XINPUT_GAMEPAD_DPAD_UP 0x0001
 #define XINPUT_GAMEPAD_DPAD_DOWN 0x0002
 #define XINPUT_GAMEPAD_DPAD_LEFT 0x0004
@@ -2023,11 +2024,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         /* TODO(nickscha): Query up to 4 controllers connected */
         XINPUT_STATE xinput_state = {0};
         u32 controller_index = 0;
+
         u32 result = XInputGetState(controller_index, &xinput_state);
 
         state.controller.connected = result == 0;
 
-        if (result == 0)
+        if (state.controller.connected)
         {
           XINPUT_GAMEPAD *gp = &xinput_state.Gamepad;
           state.controller.button_a = (gp->wButtons & XINPUT_GAMEPAD_A) ? 1 : 0;
@@ -2144,15 +2146,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           text_append_i32(text, text_size, &text_length, (i32)(mem.private_bytes / (1024)));
         }
 
-        if (state.controller.connected)
-        {
-          text_append_str(text, text_size, &text_length, "\nCONTROLLER : CONNECTED");
-        }
-        else
-        {
-          text_append_str(text, text_size, &text_length, "\nCONTROLLER : NOT FOUND");
-        }
-
         text_append_str(text, text_size, &text_length, "\nGL VENDOR  : ");
         text_append_str(text, text_size, &text_length, state.gl_vendor);
         text_append_str(text, text_size, &text_length, "\nGL RENDER  : ");
@@ -2161,6 +2154,77 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         text_append_str(text, text_size, &text_length, state.gl_version);
         text_append_str(text, text_size, &text_length, "\nGL ERROR FS: ");
         text_append_str(text, text_size, &text_length, main_shader.header.had_failure ? shader_info_log : "NONE");
+
+        if (state.controller.connected)
+        {
+          text_append_str(text, text_size, &text_length, "\nCONTROLLER : CONNECTED");
+          text_append_str(text, text_size, &text_length, "\nSTICK L X/Y: ");
+          text_append_f64(text, text_size, &text_length, state.controller.stick_left_x, 6);
+          text_append_str(text, text_size, &text_length, "/");
+          text_append_f64(text, text_size, &text_length, state.controller.stick_left_y, 6);
+          text_append_str(text, text_size, &text_length, "\nSTICK R X/Y: ");
+          text_append_f64(text, text_size, &text_length, state.controller.stick_right_x, 6);
+          text_append_str(text, text_size, &text_length, "/");
+          text_append_f64(text, text_size, &text_length, state.controller.stick_right_y, 6);
+          text_append_str(text, text_size, &text_length, "\nTRIGGER L/R: ");
+          text_append_f64(text, text_size, &text_length, state.controller.trigger_left_value, 6);
+          text_append_str(text, text_size, &text_length, "/");
+          text_append_f64(text, text_size, &text_length, state.controller.trigger_right_value, 6);
+          text_append_str(text, text_size, &text_length, "\nBUTTONS    : ");
+
+          if (state.controller.button_a)
+          {
+            text_append_str(text, text_size, &text_length, "A ");
+          }
+          if (state.controller.button_b)
+          {
+            text_append_str(text, text_size, &text_length, "B ");
+          }
+          if (state.controller.button_x)
+          {
+            text_append_str(text, text_size, &text_length, "X ");
+          }
+          if (state.controller.button_y)
+          {
+            text_append_str(text, text_size, &text_length, "Y ");
+          }
+          if (state.controller.dpad_left)
+          {
+            text_append_str(text, text_size, &text_length, "DLEFT ");
+          }
+          if (state.controller.dpad_right)
+          {
+            text_append_str(text, text_size, &text_length, "DRIGHT ");
+          }
+          if (state.controller.dpad_up)
+          {
+            text_append_str(text, text_size, &text_length, "DUP ");
+          }
+          if (state.controller.dpad_down)
+          {
+            text_append_str(text, text_size, &text_length, "DDOWN ");
+          }
+          if (state.controller.stick_left)
+          {
+            text_append_str(text, text_size, &text_length, "LSTICK ");
+          }
+          if (state.controller.stick_right)
+          {
+            text_append_str(text, text_size, &text_length, "RSTICK ");
+          }
+          if (state.controller.shoulder_left)
+          {
+            text_append_str(text, text_size, &text_length, "LSHOULDER ");
+          }
+          if (state.controller.shoulder_right)
+          {
+            text_append_str(text, text_size, &text_length, "RSHOULDER ");
+          }
+        }
+        else
+        {
+          text_append_str(text, text_size, &text_length, "\nCONTROLLER : NOT FOUND");
+        }
 
         text_null_terminate(text, text_size, &text_length);
 
