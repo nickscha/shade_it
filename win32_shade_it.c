@@ -1699,6 +1699,15 @@ typedef struct shader_font
 
 } shader_font;
 
+typedef struct shader_recording
+{
+  shader_header header;
+
+  i32 loc_iResolution;
+  i32 loc_iTime;
+
+} shader_recording;
+
 SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_vertex, s8 *shader_code_fragment)
 {
   u32 new_program;
@@ -1727,19 +1736,20 @@ SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_verte
   return 1;
 }
 
+static s8 *shader_code_vertex =
+    "#version 330 core\n"
+    "vec2 quad[3] = vec2[3](\n"
+    " vec2(-1.0, -1.0),\n"
+    " vec2( 3.0, -1.0),\n"
+    " vec2(-1.0,  3.0)\n"
+    ");\n"
+    "void main()\n"
+    "{\n"
+    "  gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0);\n"
+    "}\n";
+
 SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader_file_name)
 {
-  static s8 *shader_code_vertex =
-      "#version 330 core\n"
-      "vec2 quad[3] = vec2[3](\n"
-      " vec2(-1.0, -1.0),\n"
-      " vec2( 3.0, -1.0),\n"
-      " vec2(-1.0,  3.0)\n"
-      ");\n"
-      "void main()\n"
-      "{\n"
-      "  gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0);\n"
-      "}\n";
 
   u32 size = 0;
   u8 *shader_code_fragment = win32_file_read(shader_file_name, &size);
@@ -1805,6 +1815,34 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
   }
 }
 
+SHADE_IT_API void opengl_shader_load_shader_recording(shader_recording *shader)
+{
+  static s8 *shader_code_fragment =
+      "#version 330 core\n"
+      "out vec4 FragColor;\n"
+      "uniform float iTime;\n"
+      "uniform vec3 iResolution;\n"
+      "void main()\n"
+      "{\n"
+      "float radius = 8.0;\n"
+      "float margin = 10.0;\n"
+      "vec2 p = gl_FragCoord.xy;\n"
+      "vec2 center = vec2(iResolution.x - radius - margin, radius + margin);\n"
+      "float d = length(p - center);\n"
+      "float blink = 0.5 + 0.5 * sin(iTime * 12.0);\n"
+      "if (d <= radius && blink > 0.5)\n"
+      "  FragColor = vec4(1.0, 0.0, 0.0, blink);\n"
+      "else\n"
+      "  discard;\n"
+      "}\n";
+
+  if (opengl_shader_load(&shader->header, shader_code_vertex, shader_code_fragment))
+  {
+    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iResolution");
+    shader->loc_iTime = glGetUniformLocation(shader->header.program, "iTime");
+  }
+}
+
 SHADE_IT_API i32 start(i32 argc, u8 **argv)
 {
   /* Default fragment shader file name to load if no file is passed as an argument in cli */
@@ -1813,6 +1851,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   win32_shade_it_state state = {0};
   shader_main main_shader = {0};
   shader_font font_shader = {0};
+  shader_recording recording_shader = {0};
 
   u32 main_vao;
   u32 font_vao;
@@ -1824,7 +1863,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   state.running = 1;
-  state.window_title = "shade_it v0.5 (press F1 to show/hide information)";
+  state.window_title = "shade_it v0.5 (F1 for information, F2 to record screen to file)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
@@ -1886,6 +1925,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
     opengl_shader_load_shader_main(&main_shader, fragment_shader_file_name);
     opengl_shader_load_shader_font(&font_shader);
+    opengl_shader_load_shader_recording(&recording_shader);
   }
 
   {
@@ -2307,6 +2347,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           glReadPixels(0, 0, (i32)state.window_width, (i32)state.window_height, GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
 
           WriteFile(video_file_handle, framebuffer, state.window_width * state.window_height * 3, &written, 0);
+
+          /* Render recording indicator */
+          glUseProgram(recording_shader.header.program);
+          glUniform3f(recording_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
+          glUniform1f(recording_shader.loc_iTime, (f32)state.iTime);
+          glBindVertexArray(main_vao);
+          glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         else if (screen_recording_initialized)
         {
