@@ -2299,9 +2299,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           {
             framebuffer = VirtualAlloc(0, state.window_width * state.window_height * 3, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             video_file_handle = CreateFileA("shade_it_capture.raw", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+
+            glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
             screen_recording_initialized = 1;
           }
-          glPixelStorei(GL_PACK_ALIGNMENT, 1);
           glReadPixels(0, 0, (i32)state.window_width, (i32)state.window_height, GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
 
           WriteFile(video_file_handle, framebuffer, state.window_width * state.window_height * 3, &written, 0);
