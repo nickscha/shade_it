@@ -396,6 +396,7 @@ WIN32_API(void)   glBindTexture(u32 target, u32 texture);
 WIN32_API(void)   glTexImage2D(u32 target, i32 level, i32 internalformat, i32 width, i32 height, i32 border, i32 format, u32 type, void *pixels);
 WIN32_API(void)   glTexParameteri(u32 target, u32 pname, i32 param);
 WIN32_API(void)   glPixelStorei(u32 pname, i32 param);
+WIN32_API(void)   glReadPixels(i32 x, i32 y, i32 width, i32 height, i32 format, i32 type, void  *pixels);
 WIN32_API(void)   glBlendFunc(u32 sfactor, u32 dfactor);
 
 /* clang-format on */
@@ -461,7 +462,9 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 #define GL_TEXTURE_WRAP_S 0x2802
 #define GL_TEXTURE_WRAP_T 0x2803
 #define GL_CLAMP_TO_EDGE 0x812F
+#define GL_PACK_ALIGNMENT 0x0D05
 #define GL_UNPACK_ALIGNMENT 0x0CF5
+#define GL_RGB 0x1907
 #define GL_RED 0x1903
 #define GL_R8 0x8229
 #define GL_TEXTURE0 0x84C0
@@ -798,7 +801,7 @@ SHADE_IT_API i32 win32_process_thread_count(void)
 /* State Examples:
   Key Pressed:  state.keys[0x0D].isDown && !state.keys[0x0D].wasDown
   Key Released: !state.keys[0x0D].isDown && state.keys[0x0D].wasDown
-  
+
   Example of a Toggle switch (when pressed first toggles on, when pressed second time toggles off):
 
   static u8 ui_enabled = 0;
@@ -1940,6 +1943,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start_fps_cap;
     i64 time_last;
     u8 ui_enabled = 0;
+    u8 screen_recording_enabled = 0;
+    u8 screen_recording_initialized = 0;
     i32 thread_count = win32_process_thread_count();
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
@@ -2273,6 +2278,40 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, glyph_count);
 
         glDisable(GL_BLEND);
+      }
+
+      /* Screen recording */
+      {
+        static u8 *framebuffer;
+        static void *video_file_handle;
+
+        if (state.keys[0x71].is_down && !state.keys[0x71].was_down) /* F2 */
+        {
+          screen_recording_enabled = !screen_recording_enabled;
+        }
+
+        if (screen_recording_enabled)
+        {
+
+          u32 written = 0;
+
+          if (!screen_recording_initialized)
+          {
+            framebuffer = VirtualAlloc(0, state.window_width * state.window_height * 3, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+            video_file_handle = CreateFileA("shade_it_capture.raw", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+            screen_recording_initialized = 1;
+          }
+          glPixelStorei(GL_PACK_ALIGNMENT, 1);
+          glReadPixels(0, 0, (i32)state.window_width, (i32)state.window_height, GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
+
+          WriteFile(video_file_handle, framebuffer, state.window_width * state.window_height * 3, &written, 0);
+        }
+        else if (screen_recording_initialized)
+        {
+          VirtualFree(framebuffer, 0, MEM_RELEASE);
+          CloseHandle(video_file_handle);
+          screen_recording_initialized = 0;
+        }
       }
 
       SwapBuffers(state.dc);
