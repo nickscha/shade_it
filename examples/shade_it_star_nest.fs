@@ -19,7 +19,7 @@ uniform sampler2D iTexture;
 #define volsteps 20
 #define stepsize 0.1
 
-#define zoom   0.800
+#define zoom   1.800
 #define tile   0.850
 #define speed  0.010 
 
