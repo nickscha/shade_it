@@ -37,16 +37,6 @@ float n2D(vec2 p) {
 	return dot(mat2(fract(sin(vec4(0, 41, 289, 330) + dot(i, vec2(41, 289)))*43758.5453))*vec2(1. - p.y, p.y), vec2(1. - p.x, p.x));
 }
 
-vec3 tex3D( sampler2D t, in vec3 p, in vec3 n ){
-    n = max(abs(n), 0.001);
-    n /= dot(n, vec3(1));
-	  vec3 tx = texture(t, p.yz).xyz;
-    vec3 ty = texture(t, p.zx).xyz;
-    vec3 tz = texture(t, p.xy).xyz;
-    
-    return (tx*tx*n.x + ty*ty*n.y + tz*tz*n.z);
-}
-
 vec2 path(in float z){ 
     return vec2(sin(z*.075)*8., cos(z*.1)*.75); // Windy path.
     
@@ -81,18 +71,6 @@ float map(vec3 p){
     vec2 ca = abs(p.xy*vec2(1, .7) + vec2(0, -2.75)); // Stretch and lower space.
     float n = smax(6. - mix(length(ca), max(ca.x, ca.y), .25), p.y - 1.75, 2.) + (.5 - trSf)*4.;
     return n; 
-}
-
-vec3 texBump( sampler2D tx, in vec3 p, in vec3 n, float bf){
-    const vec2 e = vec2(.001, 0);
-    mat3 m = mat3( tex3D(tx, p - e.xyy, n), tex3D(tx, p - e.yxy, n), tex3D(tx, p - e.yyx, n));
-    vec3 g = vec3(.299, .587, .114)*m; // Converting to greyscale.
-    
-    g = (g - dot(tex3D(tx,  p , n), vec3(.299, .587, .114)) )/e.x; 
-    g -= n*dot(n, g);
-                      
-    return normalize( n + g*bf );
-	
 }
 
 float trace(vec3 ro, vec3 rd){
