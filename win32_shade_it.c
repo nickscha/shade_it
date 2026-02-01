@@ -1982,7 +1982,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start;
     i64 time_start_fps_cap;
     i64 time_last;
+
     u8 ui_enabled = 0;
+    u8 screen_recording_enabled = 0;
+    u8 screen_recording_initialized = 0;
+
     i32 thread_count = win32_process_thread_count();
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
@@ -2122,7 +2126,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       /* Rendering                  */
       /******************************/
-      if (state.window_size_changed)
+      if (state.window_size_changed && !screen_recording_enabled)
       {
         state.window_width = state.window_width_pending;
         state.window_height = state.window_height_pending;
@@ -2290,8 +2294,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       /* Screen recording */
       {
-        static u8 screen_recording_enabled = 0;
-        static u8 screen_recording_initialized = 0;
         static u8 *framebuffer;
         static void *video_file_handle;
 
