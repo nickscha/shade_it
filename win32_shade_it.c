@@ -2080,7 +2080,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         state.mouse_y = (i32)state.window_height - 1 - p.y;
       }
 
-      /* Get XInput controller */
+      /******************************/
+      /* XInput Controller          */
+      /******************************/
       if (XInputGetState)
       {
         u32 i = 0;
@@ -2155,7 +2157,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         ui_enabled = !ui_enabled;
       }
 
-      /* UI/Font renderning when F1 key is pressed */
+      /******************************/
+      /* UI Rendering (F1 pressed)  */
+      /******************************/
       if (ui_enabled)
       {
 
@@ -2292,7 +2296,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         glDisable(GL_BLEND);
       }
 
-      /* Screen recording */
+      /******************************/
+      /* Screen Recording (F2)      */
+      /******************************/
       {
         static u8 *framebuffer;
         static void *video_file_handle;
