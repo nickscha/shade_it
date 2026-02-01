@@ -1823,7 +1823,7 @@ SHADE_IT_API void opengl_shader_load_shader_recording(shader_recording *shader)
       "uniform vec3 iResolution;\n"
       "void main()\n"
       "{\n"
-      "float r = 12.0;\n"
+      "float r = 10.0;\n"
       "float m = 10.0;\n"
       "vec2 p = gl_FragCoord.xy;\n"
       "vec2 c = vec2(iResolution.x - r - m, r + m);\n"
