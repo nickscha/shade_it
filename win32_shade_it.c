@@ -2086,6 +2086,12 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       if (XInputGetState)
       {
         u32 i = 0;
+
+        /* TODO(nickscha): 
+           Getting the state for each controller every frame is expensive.
+           Better to query from time to time the connected controller and then
+           only update this controller per frame.
+        */
         for (i = 0; i < XINPUT_USER_MAX_COUNT; ++i)
         {
           XINPUT_STATE xinput_state = {0};
