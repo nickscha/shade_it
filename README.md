@@ -1,20 +1,18 @@
 # shade_it
-A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
+Live OpenGL shader playground written in C89, nostdlib in a single file.
 
-<p align="center">
 [![Watch the demo](https://raw.githubusercontent.com/nickscha/shade_it/refs/heads/main/assets/shade_it.png)](https://raw.githubusercontent.com/nickscha/shade_it/refs/heads/main/assets/shade_it.mp4)
-</p>
-
 
 > [!WARNING]
 > THIS PROJECT IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS PROJECT AT YOUR OWN RISK!
 
+## **Download the executable**
 <p align="center">
-  <a href="https://github.com/nickscha/shade_it/releases">
-    <img src="https://img.shields.io/github/v/release/nickscha/shade_it?style=flat-square&color=blue" alt="Latest Release">
-  </a>
   <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it.exe">
     <img src="https://img.shields.io/badge/Windows%20x64-green?style=flat-square" alt="Windows x64">
+  </a>
+  <a href="https://github.com/nickscha/shade_it/releases">
+    <img src="https://img.shields.io/github/v/release/nickscha/shade_it?style=flat-square&color=blue" alt="Latest Release">
   </a>
   <a href="https://github.com/nickscha/shade_it/releases">
     <img src="https://img.shields.io/github/downloads/nickscha/shade_it/total?style=flat-square&color=brightgreen" alt="Downloads">
