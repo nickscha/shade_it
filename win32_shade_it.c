@@ -894,7 +894,7 @@ typedef struct XINPUT_STATE
 typedef u32(__stdcall *XInputGetStateFunc)(u32 dwUserIndex, XINPUT_STATE *pState);
 static XInputGetStateFunc XInputGetState = 0;
 
-SHADE_IT_API i32 win32_load_xinput(void)
+SHADE_IT_API u8 win32_load_xinput(void)
 {
   void *xinput_lib = LoadLibraryA("xinput1_4.dll");
 
@@ -1884,14 +1884,16 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   /* HighRes timer for Sleep(1) */
   /******************************/
-  win32_enable_high_resolution_timer();
+  if(!win32_enable_high_resolution_timer()) {
+     win32_print("[WARNING] Cannot set win32 high resolution timer\n");
+  }
 
   /******************************/
   /* Load XInput Controller     */
   /******************************/
   if (!win32_load_xinput())
   {
-    win32_print("[win32] Could not load XInput library!\n");
+    win32_print("[WARNING] Could not load XInput library (xinput1_4.dll, xinput1_3.dll or xinput9_1_0.dll)! This means that XInput gamepads/controllers (e.g. XBOX) are not functional.\n");
   }
 
   /******************************/
