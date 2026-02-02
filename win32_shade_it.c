@@ -2351,8 +2351,25 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
           if (!screen_recording_initialized)
           {
+            s8 record_file_name[1024];
+            u32 record_file_name_size = sizeof(record_file_name);
+            u32 record_file_name_length = 0;
+
+            /* Create recording output file name.
+             * Format:  shade_it_capture_<window_width>x<window_height>_<target_frames_per_second>.raw
+             * Example: shade_it_capture_800x600_60.raw
+             */
+            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, "shade_it_capture_");
+            text_append_i32(record_file_name, record_file_name_size, &record_file_name_length, (i32)(state.window_width));
+            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, "x");
+            text_append_i32(record_file_name, record_file_name_size, &record_file_name_length, (i32)(state.window_height));
+            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, "_");
+            text_append_i32(record_file_name, record_file_name_size, &record_file_name_length, (i32)(state.target_frames_per_second));
+            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, ".raw");
+            text_null_terminate(record_file_name, record_file_name_size, &record_file_name_length);
+
             framebuffer = VirtualAlloc(0, state.window_width * state.window_height * 3, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-            video_file_handle = CreateFileA("shade_it_capture.raw", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+            video_file_handle = CreateFileA(record_file_name, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
 

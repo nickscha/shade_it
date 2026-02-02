@@ -121,7 +121,11 @@ Press **F1** to show/hide the debug information, performance metrics and GLSL co
 
 ### Screen Recording (F2)
 
-Press **F2** to start/stop recording the screen to a RAW video file named **shade_it_capture.raw**.
+Press **F2** to start/stop recording the screen to a RAW video file.
+
+The file created is named according to the screen size and target fps:
+- Format: shade_it_capture_<window_width>x<window_height>_<target_frames_per_second>.raw
+- Example: **shade_it_capture_800x600_60.raw** 
 
 > [!WARNING]
 > Since it is a RAW video output the size of the **file size can be huge**.
@@ -133,7 +137,7 @@ After the recording has been stopped you can use a tool like **FFMPEG** or simil
 Example of creating a **MP4** video using **FFMPEG**:
 
 ```bat
-ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture.raw -vf vflip out.mp4
+ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture_800x600_60.raw -vf vflip out.mp4
 ```
 
 Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
