@@ -10,7 +10,7 @@ LICENSE
 */
 
 /* #############################################################################
- * # TYPES & COMPILER SETTINGS
+ * # [SECTION] TYPES & COMPILER SETTINGS
  * #############################################################################
  */
 #if __STDC_VERSION__ >= 199901L
@@ -58,14 +58,14 @@ TYPES_STATIC_ASSERT(sizeof(u64) == 8, u64_size_must_be_8);
 TYPES_STATIC_ASSERT(sizeof(i64) == 8, i64_size_must_be_8);
 
 /* #############################################################################
- * # Force Discrete GPU
+ * # [SECTION] Force Discrete GPU
  * #############################################################################
  */
 __declspec(dllexport) u32 NvOptimusEnablement = 0x00000001;         /* NVIDIA Force discrete GPU */
 __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force discrete GPU    */
 
 /* #############################################################################
- * # Win32 "windows.h" subsitution for fast builds
+ * # [SECTION] win32 "windows.h" subsitution for fast builds
  * #############################################################################
  */
 #define WIN32_API(r) __declspec(dllimport) r __stdcall
@@ -560,7 +560,50 @@ typedef void (*PFNGLDRAWARRAYSINSTANCED)(i32 mode, i32 first, i32 count, u32 pri
 static PFNGLDRAWARRAYSINSTANCED glDrawArraysInstanced;
 
 /* #############################################################################
- * # Main Code
+ * # [SECTION] XINPUT gamepad controller support
+ * #############################################################################
+ */
+#define XINPUT_USER_MAX_COUNT 4
+#define XINPUT_GAMEPAD_DPAD_UP 0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN 0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT 0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT 0x0008
+#define XINPUT_GAMEPAD_START 0x0010
+#define XINPUT_GAMEPAD_BACK 0x0020
+#define XINPUT_GAMEPAD_LEFT_THUMB 0x0040
+#define XINPUT_GAMEPAD_RIGHT_THUMB 0x0080
+#define XINPUT_GAMEPAD_LEFT_SHOULDER 0x0100
+#define XINPUT_GAMEPAD_RIGHT_SHOULDER 0x0200
+#define XINPUT_GAMEPAD_A 0x1000
+#define XINPUT_GAMEPAD_B 0x2000
+#define XINPUT_GAMEPAD_X 0x4000
+#define XINPUT_GAMEPAD_Y 0x8000
+#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE 7849
+#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
+#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD 30
+
+typedef struct XINPUT_GAMEPAD
+{
+  u16 wButtons;
+  u8 bLeftTrigger;
+  u8 bRightTrigger;
+  i16 sThumbLX;
+  i16 sThumbLY;
+  i16 sThumbRX;
+  i16 sThumbRY;
+} XINPUT_GAMEPAD;
+
+typedef struct XINPUT_STATE
+{
+  u32 dwPacketNumber;
+  XINPUT_GAMEPAD Gamepad;
+} XINPUT_STATE;
+
+typedef u32(__stdcall *XInputGetStateFunc)(u32 dwUserIndex, XINPUT_STATE *pState);
+static XInputGetStateFunc XInputGetState = 0;
+
+/* #############################################################################
+ * # [SECTION] WIN32 specifiy functions
  * #############################################################################
  */
 #ifdef _MSC_VER
@@ -855,45 +898,6 @@ typedef struct win32_controller_state
 
 } win32_controller_state;
 
-#define XINPUT_USER_MAX_COUNT 4
-#define XINPUT_GAMEPAD_DPAD_UP 0x0001
-#define XINPUT_GAMEPAD_DPAD_DOWN 0x0002
-#define XINPUT_GAMEPAD_DPAD_LEFT 0x0004
-#define XINPUT_GAMEPAD_DPAD_RIGHT 0x0008
-#define XINPUT_GAMEPAD_START 0x0010
-#define XINPUT_GAMEPAD_BACK 0x0020
-#define XINPUT_GAMEPAD_LEFT_THUMB 0x0040
-#define XINPUT_GAMEPAD_RIGHT_THUMB 0x0080
-#define XINPUT_GAMEPAD_LEFT_SHOULDER 0x0100
-#define XINPUT_GAMEPAD_RIGHT_SHOULDER 0x0200
-#define XINPUT_GAMEPAD_A 0x1000
-#define XINPUT_GAMEPAD_B 0x2000
-#define XINPUT_GAMEPAD_X 0x4000
-#define XINPUT_GAMEPAD_Y 0x8000
-#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE 7849
-#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD 30
-
-typedef struct XINPUT_GAMEPAD
-{
-  u16 wButtons;
-  u8 bLeftTrigger;
-  u8 bRightTrigger;
-  i16 sThumbLX;
-  i16 sThumbLY;
-  i16 sThumbRX;
-  i16 sThumbRY;
-} XINPUT_GAMEPAD;
-
-typedef struct XINPUT_STATE
-{
-  u32 dwPacketNumber;
-  XINPUT_GAMEPAD Gamepad;
-} XINPUT_STATE;
-
-typedef u32(__stdcall *XInputGetStateFunc)(u32 dwUserIndex, XINPUT_STATE *pState);
-static XInputGetStateFunc XInputGetState = 0;
-
 SHADE_IT_API u8 win32_load_xinput(void)
 {
   void *xinput_lib = LoadLibraryA("xinput1_4.dll");
@@ -1160,6 +1164,10 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   return (result);
 }
 
+/* #############################################################################
+ * # [SECTION] Font Loading and Parsing
+ * #############################################################################
+ */
 /* 1-bit bitmap, packed, row-major */
 /* width=210, height=7 */
 /* Charset: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:%+-." */
@@ -1383,6 +1391,54 @@ SHADE_IT_API u32 text_to_glyphs(
   return count;
 }
 
+/* #############################################################################
+ * # [SECTION] OpenGL Context Creation and Shader Management
+ * #############################################################################
+ */
+typedef struct shader_header
+{
+  u32 created;
+  u32 program;
+  u8 had_failure;
+} shader_header;
+
+typedef struct shader_main
+{
+  shader_header header;
+
+  i32 loc_iResolution;
+  i32 loc_iTime;
+  i32 loc_iTimeDelta;
+  i32 loc_iFrame;
+  i32 loc_iFrameRate;
+  i32 loc_iMouse;
+  i32 loc_iTextureInfo;
+  i32 loc_iTexture;
+
+} shader_main;
+
+typedef struct shader_font
+{
+  shader_header header;
+
+  i32 loc_iResolution;
+  i32 loc_iTextureInfo;
+  i32 loc_iTexture;
+  i32 loc_iFontScale;
+
+} shader_font;
+
+typedef struct shader_recording
+{
+  shader_header header;
+
+  i32 loc_iResolution;
+  i32 loc_iTime;
+
+} shader_recording;
+
+static s8 shader_info_log[1024];
+
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
 {
   void *window_instance = GetModuleHandleA(0);
@@ -1593,8 +1649,6 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   return 1;
 }
 
-static s8 shader_info_log[1024];
-
 SHADE_IT_API i32 opengl_shader_compile(
     s8 *shaderCode,
     u32 shaderType)
@@ -1664,48 +1718,6 @@ SHADE_IT_API i32 opengl_shader_create(
 
   return 1;
 }
-
-typedef struct shader_header
-{
-  u32 created;
-  u32 program;
-  u8 had_failure;
-} shader_header;
-
-typedef struct shader_main
-{
-  shader_header header;
-
-  i32 loc_iResolution;
-  i32 loc_iTime;
-  i32 loc_iTimeDelta;
-  i32 loc_iFrame;
-  i32 loc_iFrameRate;
-  i32 loc_iMouse;
-  i32 loc_iTextureInfo;
-  i32 loc_iTexture;
-
-} shader_main;
-
-typedef struct shader_font
-{
-  shader_header header;
-
-  i32 loc_iResolution;
-  i32 loc_iTextureInfo;
-  i32 loc_iTexture;
-  i32 loc_iFontScale;
-
-} shader_font;
-
-typedef struct shader_recording
-{
-  shader_header header;
-
-  i32 loc_iResolution;
-  i32 loc_iTime;
-
-} shader_recording;
 
 SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_vertex, s8 *shader_code_fragment)
 {
@@ -1843,6 +1855,10 @@ SHADE_IT_API void opengl_shader_load_shader_recording(shader_recording *shader)
   }
 }
 
+/* #############################################################################
+ * # [SECTION] Main Entry Point
+ * #############################################################################
+ */
 SHADE_IT_API i32 start(i32 argc, u8 **argv)
 {
   /* Default fragment shader file name to load if no file is passed as an argument in cli */
@@ -2424,6 +2440,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   return 0;
 }
 
+/* #############################################################################
+ * # [SECTION] nostdlib entry point
+ * #############################################################################
+ */
 #ifdef __clang__
 #elif __GNUC__
 __attribute((externally_visible))
