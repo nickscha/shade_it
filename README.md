@@ -1,12 +1,15 @@
 # shade_it
-Live OpenGL shader playground written in C89, nostdlib in a single file.
+Live OpenGL shader playground written in C89, nostdlib in a single file and tiny executable (~28kb).
 
-[![Watch the demo](https://raw.githubusercontent.com/nickscha/shade_it/refs/heads/main/assets/shade_it.png)](https://raw.githubusercontent.com/nickscha/shade_it/refs/heads/main/assets/shade_it.mp4)
+It allows you to **live edit GLSL** fragment **shaders** file and when changes saved to the file it automatically displays the changes.
+
+## Watch the demo video
+https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 
 > [!WARNING]
 > THIS PROJECT IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS PROJECT AT YOUR OWN RISK!
 
-## **Download the executable**
+## Download the executable
 <p align="center">
   <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it.exe">
     <img src="https://img.shields.io/badge/Windows%20x64-green?style=flat-square" alt="Windows x64">
@@ -24,7 +27,7 @@ Live OpenGL shader playground written in C89, nostdlib in a single file.
   <img src="https://img.shields.io/badge/nolib-nostdlib-lightgrey?style=flat-square" alt="nostdlib">
 </p>
 
-## **Features**
+## Features
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
 - **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
