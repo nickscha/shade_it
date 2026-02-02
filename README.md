@@ -35,6 +35,7 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 - **Screen Recording** - Press F2 to start/stop recording the screen to a raw video file
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
+- **no memory allocation** — There is no memory allocation by the tool itself. It only uses the memory Windows is acquiring for the OpenGL Framebuffers, ...
 - **Strict compilation** — built with aggressive warnings & safety checks  
 
 ## Quick Start
