@@ -70,11 +70,9 @@ win32_shade_it.exe examples\shade_it_star_nest.fs
 
 While **running** you can **edit** and save the fragment shader source file and shade_it will immediatly **hot-reload** the code.
 
-If you want to create your own **GLSL fragment shader from scratch** you can use this **template** providing all uniforms `shade_it` hands over to the fragment shader:
-
 ### GLSL Fragment Shader Template
 
-If you want to start writing your own fragment shader from scratch you can use this template containing all uniforms provided by the tool.
+If you want to create your own **GLSL fragment shader from scratch** you can use this **template** providing all uniforms `shade_it` hands over to the fragment shader:
 
 ```glsl
 #version 330 core
@@ -108,13 +106,20 @@ void main()
 
 Under the **examples** folder you can find different kinds of fragment shaders for inspiration that you can run directly.
 
-### Show Debug UI
+### Log File
+
+When the application is started it will write a log file named **shade_it.log**.
+Beside the Debug UI you can also find here GLSL compilation errors if a shader is invalid.
+
+If you encounter a problem/bug please attach this log file to the issue.
+
+### Show Debug UI (F1)
 
 Press **F1** to show/hide the debug information, performance metrics and GLSL compilation errors/logs.
 
 <a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_debug_ui.png"></a>
 
-### Screen Recording
+### Screen Recording (F2)
 
 Press **F2** to start/stop recording the screen to a RAW video file named **shade_it_capture.raw**.
 
