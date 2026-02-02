@@ -2,9 +2,7 @@
 A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
 
 <p align="center">
-<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/clouds.png" width="200"></a>
-<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/waves.png" width="200"></a>
-<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/trip.png" width="200"></a>
+<a href="https://github.com/nickscha/shade_it/examples"><img src="assets/shade_it.mp4" width="802"></a>
 </p>
 
 > [!WARNING]

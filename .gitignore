@@ -2,7 +2,6 @@
 *.d
 *.log
 *.raw
-*.mp4
 
 # Object files
 *.o
