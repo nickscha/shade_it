@@ -1,5 +1,5 @@
 # shade_it
-Live OpenGL shader playground written in C89, nostdlib in a single file and tiny executable (~28kb).
+Live OpenGL shader coding playground written in C89, nostdlib in a single file and tiny executable (~28kb).
 
 It allows you to **live edit GLSL** fragment **shaders** file and when changes saved to the file it automatically displays the changes.
 
@@ -29,13 +29,13 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 
 ## Features
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
-- **Minimal binary size** — around 28kb binary
+- **Minimal binary size** — around **28kb** binary
 - **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
 - **Debug UI** - Press F1 to see performance metrics and GLSL compilation errors/logs
 - **Screen Recording** - Press F2 to start/stop recording the screen to a raw video file
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
-- **no memory allocation** — There is no memory allocation by the tool itself. It only uses the memory Windows is acquiring for the OpenGL Framebuffers, ...
+- **no memory allocation** — There is **no memory allocation** by the tool itself. It only uses the memory Windows is acquiring for the OpenGL Framebuffers, ...
 - **Strict compilation** — built with aggressive warnings & safety checks  
 
 ## Quick Start
