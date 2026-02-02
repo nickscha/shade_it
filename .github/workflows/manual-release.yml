@@ -75,7 +75,7 @@ jobs:
           body: |
             # ${{ github.event.inputs.version }}: shade_it - OpenGL Shader Playground Release.
 
-            A C89 standard compliant, single header, nostdlib (no C Standard Library) OpenGL Shader Playground (SHADE_IT).
+            A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL Live Shader Coding Playground (SHADE_IT).
 
             ---
 
