@@ -87,7 +87,7 @@ jobs:
 
 
             ## Downloads
-            - **win32_shade_it.exe** (Windows, OpenGL 3.3)
+            - **win32_shade_it.exe** (Windows x64, OpenGL 3.3)
 
             ---
 
