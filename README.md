@@ -138,6 +138,10 @@ ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture.raw -vf v
 
 Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
 
+### Pausing Shader (P)
+
+If you want to freeze/pause the current shader display you can press **P**.
+
 ## Roadmap
 
 For the next release of **SHADE_IT** the following features are planend.

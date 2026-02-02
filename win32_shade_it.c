@@ -1863,7 +1863,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   }
 
   state.running = 1;
-  state.window_title = "shade_it v0.5 (F1 for information, F2 to record screen to file)";
+  state.window_title = "shade_it v0.5 (F1=Debug UI, F2=Screen Recording, P=Pause Shader)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
@@ -1884,8 +1884,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   /* HighRes timer for Sleep(1) */
   /******************************/
-  if(!win32_enable_high_resolution_timer()) {
-     win32_print("[WARNING] Cannot set win32 high resolution timer\n");
+  if (!win32_enable_high_resolution_timer())
+  {
+    win32_print("[WARNING] Cannot set win32 high resolution timer\n");
   }
 
   /******************************/
@@ -1985,6 +1986,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start_fps_cap;
     i64 time_last;
 
+    u8 shader_paused = 0;
     u8 ui_enabled = 0;
     u8 screen_recording_enabled = 0;
     u8 screen_recording_initialized = 0;
@@ -2089,7 +2091,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       {
         u32 i = 0;
 
-        /* TODO(nickscha): 
+        /* TODO(nickscha):
            Getting the state for each controller every frame is expensive.
            Better to query from time to time the connected controller and then
            only update this controller per frame.
@@ -2148,15 +2150,24 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       glClear(GL_COLOR_BUFFER_BIT);
 
-      glUseProgram(main_shader.header.program);
-      glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
-      glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
-      glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
-      glUniform1i(main_shader.loc_iFrame, state.iFrame);
-      glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
-      glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, (f32)state.mouse_dx, (f32)state.mouse_dy);
-      glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
-      glUniform1i(main_shader.loc_iTexture, 0);
+      if (state.keys[0x50].is_down && !state.keys[ 	0x50].was_down) /* P */
+      {
+        shader_paused = !shader_paused;
+      }
+
+      if (!shader_paused)
+      {
+        glUseProgram(main_shader.header.program);
+        glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
+        glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
+        glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
+        glUniform1i(main_shader.loc_iFrame, state.iFrame);
+        glUniform1f(main_shader.loc_iFrameRate, (f32)state.iFrameRate);
+        glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, (f32)state.mouse_dx, (f32)state.mouse_dy);
+        glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
+        glUniform1i(main_shader.loc_iTexture, 0);
+      }
+
       glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
 
