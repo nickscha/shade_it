@@ -2150,14 +2150,15 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       glClear(GL_COLOR_BUFFER_BIT);
 
-      if (state.keys[0x50].is_down && !state.keys[ 	0x50].was_down) /* P */
+      if (state.keys[0x50].is_down && !state.keys[0x50].was_down) /* P */
       {
         shader_paused = !shader_paused;
       }
 
+      glUseProgram(main_shader.header.program);
+
       if (!shader_paused)
       {
-        glUseProgram(main_shader.header.program);
         glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
         glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
         glUniform1f(main_shader.loc_iTimeDelta, (f32)state.iTimeDelta);
