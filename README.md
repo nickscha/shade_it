@@ -28,21 +28,23 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 </p>
 
 ## Features
+- **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
+- **Minimal binary size** — around 28kb binary
+- **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
+- **Debug UI** - Press F1 to see performance metrics and GLSL compilation errors/logs
+- **Screen Recording** - Press F2 to start/stop recording the screen to a raw video file
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
-- **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
-- **Minimal binary size** — around 28kb binary
 - **Strict compilation** — built with aggressive warnings & safety checks  
-- **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 
 ## Quick Start
 
-### Windows (Prebuilt)
+### Download Windows Executable (Prebuilt)
 
 Download the latest Windows executable from the **Latest Release**:
 - https://github.com/nickscha/shade_it/releases/latest
 
-### From Source
+### Building From Source
 
 Clone the repository and build manually.
 Either GCC or Clang is required to run the build script.
@@ -62,12 +64,16 @@ REM This expects a file named "shade_it.fs" to be present
 win32_shade_it.exe
 
 REM Alternativly you can define your own fragment shader file
-win32_shade_it.exe my_custom_shader.fs
+win32_shade_it.exe examples\shade_it_star_nest.fs
 ```
 
 While **running** you can **edit** and save the fragment shader source file and shade_it will immediatly **hot-reload** the code.
 
 If you want to create your own **GLSL fragment shader from scratch** you can use this **template** providing all uniforms `shade_it` hands over to the fragment shader:
+
+### GLSL Fragment Shader Template
+
+If you want to start writing your own fragment shader from scratch you can use this template containing all uniforms provided by the tool.
 
 ```glsl
 #version 330 core
@@ -84,6 +90,7 @@ uniform vec4  iMouse;       // mouse position (x,y)
 uniform vec4  iTextureInfo; // texture width, height, cell width, cell height
 uniform sampler2d iTexture; // texture slot
 
+/* DEMO: Render gradient colors accross the entire screen */
 void mainImage(out vec4 outColor, in vec2 fragCoord)
 {
   vec2 uv = fragCoord / iResolution.xy;
@@ -99,6 +106,32 @@ void main()
 ```
 
 Under the **examples** folder you can find different kinds of fragment shaders for inspiration that you can run directly.
+
+### Show Debug UI
+
+Press **F1** to show/hide the debug information, performance metrics and GLSL compilation errors/logs.
+
+<a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_debug_ui.png"></a>
+
+### Screen Recording
+
+Press **F2** to start/stop recording the screen to a RAW video file named **shade_it_capture.raw**.
+
+> [!WARNING]
+> Since it is a RAW video output the size of the **file size can be huge**.
+
+<a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_record_ui.png"></a>
+
+After the recording has been stopped you can use a tool like **FFMPEG** or similar to **convert** it to a **video** format.
+
+Example of creating a **MP4** video using **FFMPEG**:
+
+```bat
+ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture.raw -vf vflip out.mp4
+```
+
+Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
+
 
 ## "nostdlib" Motivation & Purpose
 
