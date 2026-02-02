@@ -133,6 +133,15 @@ ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture.raw -vf v
 
 Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
 
+## Roadmap
+
+For the next release of **SHADE_IT** the following features are planend.
+
+### v0.6 Features (in development)
+- Fullscreen support for both windowed and borderless
+- User specified Textures for iChannel0-4 (BMP support for now)
+- Key Event Uniform support (Add new uniforms in the shaders to retrieve key presses/releases)
+- Full XInput Controller support (Retrieving logic implemented in v0.5 but not yet optimized and passed to shaders)
 
 ## "nostdlib" Motivation & Purpose
 
