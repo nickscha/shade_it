@@ -1022,7 +1022,7 @@ typedef struct win32_shade_it_state
   s8 *window_title;
 
   void *window_handle;
-  void *dc;
+  void *device_context;
 
   /* Input state */
   i32 mouse_dx; /* Relative movement delta for x  */
@@ -1417,6 +1417,7 @@ typedef struct shader_header
   u32 created;
   u32 program;
   u8 had_failure;
+
 } shader_header;
 
 typedef struct shader_main
@@ -1538,7 +1539,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
       state /* Pass pointer to user data to the window callback */
   );
 
-  state->dc = GetDC(state->window_handle);
+  state->device_context = GetDC(state->window_handle);
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4068)
@@ -1607,12 +1608,12 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
     i32 pixel_format_id;
     u32 num_formats;
 
-    if (!wglChoosePixelFormatARB(state->dc, pixel_attributes, 0, 1, &pixel_format_id, &num_formats) || !num_formats)
+    if (!wglChoosePixelFormatARB(state->device_context, pixel_attributes, 0, 1, &pixel_format_id, &num_formats) || !num_formats)
     {
       return 0;
     }
 
-    SetPixelFormat(state->dc, pixel_format_id, 0);
+    SetPixelFormat(state->device_context, pixel_format_id, 0);
   }
 
   /* Create the OpenGL context */
@@ -1624,14 +1625,14 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         0};
 
-    void *rc = wglCreateContextAttribsARB(state->dc, 0, context_attributes);
+    void *rc = wglCreateContextAttribsARB(state->device_context, 0, context_attributes);
 
     wglMakeCurrent(0, 0);
     wglDeleteContext(fake_rc);
     ReleaseDC(fake_window, fake_device_context);
     DestroyWindow(fake_window);
 
-    if (!rc || !wglMakeCurrent(state->dc, rc))
+    if (!rc || !wglMakeCurrent(state->device_context, rc))
     {
       return 0;
     }
@@ -1869,7 +1870,7 @@ SHADE_IT_API void opengl_shader_load_shader_recording(shader_recording *shader)
 SHADE_IT_API i32 start(i32 argc, u8 **argv)
 {
   /* Default fragment shader file name to load if no file is passed as an argument in cli */
-  s8 *fragment_shader_file_name = "shade_it.fs";
+  s8 *fragment_shader_file_name = (argv && argc > 1) ? (s8 *)argv[1] : "shade_it.fs";
 
   win32_shade_it_state state = {0};
   shader_main main_shader = {0};
@@ -1880,18 +1881,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   u32 font_vao;
   u32 glyph_vbo;
 
-  if (argv && argc > 1)
-  {
-    fragment_shader_file_name = (s8 *)argv[1];
-  }
-
   state.running = 1;
   state.window_title = "shade_it v0.6 (F1=Debug UI, F2=Screen Recording, P=Pause Shader)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
-  state.window_handle = 0;
-  state.dc = 0;
   state.target_frames_per_second = 60; /* 60 FPS, 0 = unlimited */
 
   /******************************/
@@ -1942,7 +1936,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   glDisable(GL_MULTISAMPLE);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  SwapBuffers(state.dc);
+  SwapBuffers(state.device_context);
 
   /* Make the window visible */
   ShowWindow(state.window_handle, SW_SHOW);
@@ -2419,7 +2413,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         }
       }
 
-      SwapBuffers(state.dc);
+      SwapBuffers(state.device_context);
 
       /* Measure RAW FPS (rendering without cap)*/
       {
