@@ -1383,6 +1383,9 @@ SHADE_IT_API u32 text_to_glyphs(
   f32 x = start_x;
   f32 y = start_y;
 
+  f32 advance_x = (f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale;
+  f32 advance_y = ((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT;
+
   while (*text && count < max_glyphs)
   {
     s8 c = *text++;
@@ -1391,14 +1394,14 @@ SHADE_IT_API u32 text_to_glyphs(
     if (c == '\n')
     {
       x = start_x;
-      y += ((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT;
+      y += advance_y;
       continue;
     }
 
     /* skip spaces explicitly */
     if (c == ' ')
     {
-      x += (f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale;
+      x += advance_x;
       continue;
     }
 
@@ -1411,7 +1414,7 @@ SHADE_IT_API u32 text_to_glyphs(
     out_glyphs[count].y = y;
     out_glyphs[count++].glyph_index = (f32)gi;
 
-    x += (f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale;
+    x += advance_x;
   }
 
   return count;
