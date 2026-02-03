@@ -69,8 +69,10 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
     /* Color */
     vec3 col = vec3(0.15, 0.3, 0.6);
     col = mix(col, vec3(0.9, 0.95, 1.0), n);
-
-    /* Mouse visualization */
+    
+    /* ############################## */
+    /* # Mouse visualization        # */
+    /* ############################## */
     if (iMouse.x >= 0.0)
     {
         vec2 mouse = iMouse.xy;
@@ -81,9 +83,11 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
         col += mouseCol * dotMask * 1.2;
     }
 
-    /* Texture visualization */
+    /* ############################## */
+    /* # Texture visualization      # */
+    /* ############################## */
     vec2 cornerSize = iTextureInfo.xy; // size in pixels
-    vec2 cornerPos  = vec2(0, 0);      // offset from bottom-left
+    vec2 cornerPos  = vec2(10, 10);    // offset from bottom-left
 
     if (fragCoord.x >= cornerPos.x && fragCoord.x < cornerPos.x + cornerSize.x &&
         fragCoord.y >= cornerPos.y && fragCoord.y < cornerPos.y + cornerSize.y)
@@ -94,11 +98,12 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
         texUV.y = 1.0 - (fragCoord.y - cornerPos.y) / cornerSize.y;  // flip Y
 
         vec3 texCol = texture(iTexture, texUV).rrr; // grayscale font
-        float mask = texCol.r;                      // black glyph = 1
-        col = mix(col, vec3(0.0), mask);            // overlay black font
+        col = mix(col, vec3(0.0), texCol.r);        // overlay black font
     }
 
-    /* Debug green border */
+    /* ############################## */
+    /* # Screen Border              # */
+    /* ############################## */
     float border = 1.0;
 
     if (fragCoord.x < border ||
