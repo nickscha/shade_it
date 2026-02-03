@@ -1763,12 +1763,12 @@ SHADE_IT_API u32 opengl_shader_load(shader_header *shader, s8 *shader_code_verte
 
 static s8 *shader_code_vertex =
     "#version 330 core\n"
-    "vec2 quad[3] = vec2[3]("
-    " vec2(-1.0, -1.0),"
-    " vec2( 3.0, -1.0),"
-    " vec2(-1.0,  3.0)"
+    "vec2 quad[3]=vec2[3]("
+    "vec2(-1.0,-1.0),"
+    "vec2(3.0,-1.0),"
+    "vec2(-1.0,3.0)"
     ");"
-    "void main(){ gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0); }";
+    "void main(){gl_Position=vec4(quad[gl_VertexID],0.0,1.0);}";
 
 SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader_file_name)
 {
@@ -1800,21 +1800,21 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
 {
   static s8 *shader_font_code_vertex =
       "#version 330 core\n"
-      "layout(location = 0) in vec2 pos;"
-      "layout(location = 1) in vec3 iGlyph;"
+      "layout(location=0) in vec2 pos;"
+      "layout(location=1) in vec3 iGlyph;"
       "uniform vec3 iRes;"
       "uniform vec4 iTi;"
       "uniform float iFs;"
       "out vec2 vUV;"
       "void main()"
       "{"
-      "float gi = iGlyph.z;"
-      "float cols = iTi.x / iTi.z;"
-      "vec2 pp = iGlyph.xy + pos * vec2(iTi.z,iTi.w) * iFs;"
-      "vec2 ndc = (pp / iRes.xy) * 2.0 - 1.0;"
-      "ndc.y = -ndc.y;"
-      "gl_Position = vec4(ndc, 0.0, 1.0);"
-      "vUV = vec2((mod(gi, cols) + pos.x) * iTi.z / iTi.x, (floor(gi / cols) + pos.y) * iTi.w / iTi.y);"
+      "float gi=iGlyph.z;"
+      "float c=iTi.x/iTi.z;"
+      "vec2 pp=iGlyph.xy+pos*vec2(iTi.z,iTi.w)*iFs;"
+      "vec2 ndc=(pp/iRes.xy)*2.0-1.0;"
+      "ndc.y=-ndc.y;"
+      "gl_Position=vec4(ndc,0.0,1.0);"
+      "vUV=vec2((mod(gi,c)+pos.x)*iTi.z/iTi.x,(floor(gi/c)+pos.y)*iTi.w/iTi.y);"
       "}";
 
   static s8 *shader_font_code_fragment =
@@ -1822,11 +1822,7 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
       "in vec2 vUV;"
       "uniform sampler2D iTexture;"
       "out vec4 FragColor;"
-      "void main()"
-      "{"
-      "float glyph = texture(iTexture, vUV).r;"
-      "FragColor = vec4(1.0, 1.0, 1.0, glyph);"
-      "}";
+      "void main(){FragColor=vec4(1.0,1.0,1.0,texture(iTexture,vUV).r);}";
 
   if (opengl_shader_load(&shader->header, shader_font_code_vertex, shader_font_code_fragment))
   {
@@ -1843,25 +1839,25 @@ SHADE_IT_API void opengl_shader_load_shader_recording(shader_recording *shader)
       "#version 330 core\n"
       "out vec4 FragColor;"
       "uniform float iTime;"
-      "uniform vec3 iResolution;"
+      "uniform vec3 iRes;"
       "void main()"
       "{"
-      "float r = 10.0;"
-      "float m = 10.0;"
-      "vec2 p = gl_FragCoord.xy;"
-      "vec2 c = vec2(iResolution.x - r - m, r + m);"
-      "float d = length(p - c);"
-      "float blink = 0.5 + 0.5 * sin(iTime * 12.0);"
-      "float b = 4.0;"
-      "if ((d <= r && blink > 0.5) || (p.x < b || p.y < b || p.x >= iResolution.x - b || p.y >= iResolution.y - b))"
-      "  FragColor = vec4(1.0, 0.0, 0.0, blink);"
+      "float r=10.0;"
+      "float m=10.0;"
+      "vec2 p=gl_FragCoord.xy;"
+      "vec2 c=vec2(iRes.x-r-m, r+m);"
+      "float d=length(p-c);"
+      "float blink=0.5+0.5*sin(iTime*12.0);"
+      "float b=4.0;"
+      "if ((d<=r&&blink>0.5)||(p.x<b||p.y<b||p.x>=iRes.x-b||p.y>=iRes.y-b))"
+      " FragColor=vec4(1.0,0.0,0.0,blink);"
       "else"
-      "  discard;"
+      " discard;"
       "}";
 
   if (opengl_shader_load(&shader->header, shader_code_vertex, shader_code_fragment))
   {
-    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iResolution");
+    shader->loc_iResolution = glGetUniformLocation(shader->header.program, "iRes");
     shader->loc_iTime = glGetUniformLocation(shader->header.program, "iTime");
   }
 }
@@ -1927,7 +1923,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   if (!win32_load_xinput())
   {
-    win32_print("[WARNING] Could not load XInput library (xinput1_4.dll, xinput1_3.dll or xinput9_1_0.dll)! This means that XInput gamepads/controllers (e.g. XBOX) are not functional.\n");
+    win32_print("[WARNING] Could not load XInput (xinput1_4.dll, xinput1_3.dll or xinput9_1_0.dll)! XInput gamepads/controllers (e.g. XBOX) are not functional.\n");
   }
 
   /******************************/
