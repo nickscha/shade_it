@@ -57,6 +57,23 @@ TYPES_STATIC_ASSERT(sizeof(f64) == 8, f64_size_must_be_8);
 TYPES_STATIC_ASSERT(sizeof(u64) == 8, u64_size_must_be_8);
 TYPES_STATIC_ASSERT(sizeof(i64) == 8, i64_size_must_be_8);
 
+/* Unfortunaly "modern" compilers sometimes inject memset intrinsics in the generated code 
+ * even if the application does not call memset and even with -fno-builtin, ... set.
+ * Therefore we have to provide our own memset function.
+ */
+#ifdef _MSC_VER
+#pragma function(memset)
+#endif
+void *memset(void *dest, i32 c, u32 count)
+{
+  s8 *bytes = (s8 *)dest;
+  while (count--)
+  {
+    *bytes++ = (s8)c;
+  }
+  return dest;
+}
+
 /* #############################################################################
  * # [SECTION] Force Discrete GPU
  * #############################################################################
@@ -606,19 +623,6 @@ static XInputGetStateFunc XInputGetState = 0;
  * # [SECTION] WIN32 specifiy functions
  * #############################################################################
  */
-#ifdef _MSC_VER
-#pragma function(memset)
-#endif
-void *memset(void *dest, i32 c, u32 count)
-{
-  s8 *bytes = (s8 *)dest;
-  while (count--)
-  {
-    *bytes++ = (s8)c;
-  }
-  return dest;
-}
-
 SHADE_IT_API void win32_print(s8 *str)
 {
   static u32 written;
@@ -2129,7 +2133,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
            Better to query from time to time the connected controller and then
            only update this controller per frame.
         */
-       (void) XINPUT_USER_MAX_COUNT;
+        (void)XINPUT_USER_MAX_COUNT;
 
         for (i = 0; i < 1; ++i)
         {
