@@ -2256,7 +2256,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         /* build UI string */
         t.size = sizeof(buffer);
         t.buffer = buffer;
-        t.buffer[0] = 0;
+        
         text_append_str(&t, "FPS        : ");
         text_append_f64(&t, state.iFrameRate, 2);
         text_append_str(&t, "\nFPS TARGET : ");
