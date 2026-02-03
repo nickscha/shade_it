@@ -1257,11 +1257,21 @@ SHADE_IT_API void text_append_char(text *src, s8 c)
 
 SHADE_IT_API void text_append_str(text *src, s8 *s)
 {
-  while (*s)
+  u32 len = src->length;
+  u32 cap = src->size;
+
+  if (len >= cap)
   {
-    text_append_char(src, *s);
-    s++;
+    return;
   }
+
+  while (*s && (len + 1 < cap))
+  {
+    src->buffer[len++] = *s++;
+  }
+
+  src->buffer[len] = 0;
+  src->length = len;
 }
 
 SHADE_IT_API void text_append_i32(text *src, i32 v)
