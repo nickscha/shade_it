@@ -1,7 +1,7 @@
 # shade_it
 Live OpenGL shader coding playground written in C89, nostdlib in a single file and tiny executable (~28kb).
 
-It allows you to **live edit GLSL** fragment **shaders** file and when changes saved to the file it automatically displays the changes.
+It allows you to **live edit GLSL** fragment **shaders** and automatically displays the changes.
 
 ## Watch the demo video
 https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
