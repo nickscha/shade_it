@@ -1243,7 +1243,7 @@ SHADE_IT_API void win32_window_enter_borderless(win32_shade_it_state *state)
 
     GetMonitorInfoA(MonitorFromWindow(state->window_handle, MONITOR_DEFAULTTONEAREST), &mi);
     SetWindowLongA(state->window_handle, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
-    
+
     SetWindowPos(
         state->window_handle, HWND_TOP,
         mi.rcMonitor.left, mi.rcMonitor.top,
@@ -2394,8 +2394,23 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         t.size = sizeof(buffer);
         t.buffer = buffer;
 
-        text_append_str(&t, "PAUSED     : ");
-        text_append_str(&t, shader_paused ? "YES" : "NO");
+        text_append_str(&t, "STATE      : ");
+        if (shader_paused)
+        {
+          text_append_str(&t, "PAUSED ");
+        }
+        if (borderless_enabled)
+        {
+          text_append_str(&t, "BORDERLESS ");
+        }
+        if (fullscreen_enabled)
+        {
+          text_append_str(&t, "FULLSCREEN ");
+        }
+        if (screen_recording_enabled)
+        {
+          text_append_str(&t, "RECORDING ");
+        }
         text_append_str(&t, "\nFPS        : ");
         text_append_f64(&t, state.iFrameRate, 2);
         text_append_str(&t, "\nFPS TARGET : ");
