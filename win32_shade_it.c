@@ -1245,16 +1245,6 @@ typedef struct text
   s8 *buffer;
 } text;
 
-SHADE_IT_API void text_append_char(text *src, s8 c)
-{
-  if (src->length + 1 >= src->size)
-  {
-    return;
-  }
-  src->buffer[src->length++] = c;
-  src->buffer[src->length] = 0;
-}
-
 SHADE_IT_API void text_append_str(text *src, s8 *s)
 {
   u32 len = src->length;
@@ -1276,13 +1266,20 @@ SHADE_IT_API void text_append_str(text *src, s8 *s)
 
 SHADE_IT_API void text_append_i32(text *src, i32 v)
 {
-  s8 buf[12];
+  s8 tmp[12];
   i32 i = 0;
   u32 u;
+  u32 len = src->length;
+  u32 cap = src->size;
+
+  if (len + 1 >= cap)
+  {
+    return;
+  }
 
   if (v < 0)
   {
-    text_append_char(src, '-');
+    src->buffer[len++] = '-';
     u = (u32)(-v);
   }
   else
@@ -1292,45 +1289,67 @@ SHADE_IT_API void text_append_i32(text *src, i32 v)
 
   if (u == 0)
   {
-    text_append_char(src, '0');
+    src->buffer[len++] = '0';
+    src->buffer[len] = 0;
+    src->length = len;
     return;
   }
 
-  while (u && i < (i32)sizeof(buf))
+  while (u && i < 12)
   {
-    buf[i++] = (s8)('0' + (u % 10));
+    tmp[i++] = (s8)('0' + (u % 10));
     u /= 10;
   }
 
-  while (i--)
+  while (i-- && (len + 1 < cap))
   {
-    text_append_char(src, buf[i]);
+    src->buffer[len++] = tmp[i];
   }
+
+  src->buffer[len] = 0;
+  src->length = len;
 }
 
 SHADE_IT_API void text_append_f64(text *src, f64 v, i32 decimals)
 {
   i32 i;
   f64 frac;
+  u32 len = src->length;
+  u32 cap = src->size;
+
+  if (len + 1 >= cap)
+  {
+    return;
+  }
 
   if (v < 0.0)
   {
-    text_append_char(src, '-');
+    src->buffer[len++] = '-';
     v = -v;
   }
 
-  /* integer part */
+  src->length = len;
   text_append_i32(src, (i32)v);
-  text_append_char(src, '.');
+  len = src->length;
+
+  if (len + 1 >= cap)
+  {
+    return;
+  }
+
+  src->buffer[len++] = '.';
 
   frac = v - (f64)((i32)v);
 
-  for (i = 0; i < decimals; ++i)
+  for (i = 0; i < decimals && (len + 1 < cap); ++i)
   {
     frac *= 10.0;
-    text_append_char(src, (s8)('0' + ((i32)frac)));
-    frac -= (f64)((i32)frac);
+    src->buffer[len++] = (s8)('0' + (i32)frac);
+    frac -= (i32)frac;
   }
+
+  src->buffer[len] = 0;
+  src->length = len;
 }
 
 SHADE_IT_API void text_null_terminate(text *src)
