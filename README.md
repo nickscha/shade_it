@@ -143,11 +143,11 @@ ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture_800x600_6
 
 Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
 
-### Borderless Mode (F9)
+### Borderless Mode (F9) (v0.6 - not released yet)
 
 You can enter/leave the borderless window mode by pressing **F9**.
 
-### Fullscreen Mode (F11)
+### Fullscreen Mode (F11) (v0.6 - not released yet)
 
 You can enter/leave the "classic" fullscreen window mode by pressing **F11**.
 
