@@ -1768,10 +1768,7 @@ static s8 *shader_code_vertex =
     " vec2( 3.0, -1.0),\n"
     " vec2(-1.0,  3.0)\n"
     ");\n"
-    "void main()\n"
-    "{\n"
-    "  gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0);\n"
-    "}\n";
+    "void main(){ gl_Position = vec4(quad[gl_VertexID], 0.0, 1.0); }\n";
 
 SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader_file_name)
 {
@@ -1827,8 +1824,8 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
       "out vec4 FragColor;\n"
       "void main()\n"
       "{\n"
-      "    float glyph = texture(iTexture, vUV).r;\n"
-      "    FragColor = vec4(1.0, 1.0, 1.0, glyph);\n"
+      "float glyph = texture(iTexture, vUV).r;\n"
+      "FragColor = vec4(1.0, 1.0, 1.0, glyph);\n"
       "}\n";
 
   if (opengl_shader_load(&shader->header, shader_font_code_vertex, shader_font_code_fragment))
