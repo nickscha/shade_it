@@ -1352,18 +1352,6 @@ SHADE_IT_API void text_append_f64(text *src, f64 v, i32 decimals)
   src->length = len;
 }
 
-SHADE_IT_API void text_null_terminate(text *src)
-{
-  if (src->length >= src->size)
-  {
-    src->buffer[src->size - 1] = 0;
-    src->length = src->size - 1;
-    return;
-  }
-
-  src->buffer[src->length] = 0;
-}
-
 typedef struct glyph
 {
   f32 x;
@@ -2348,8 +2336,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           text_append_str(&t, "\nCONTROLLER : NOT FOUND");
         }
 
-        text_null_terminate(&t);
-
         glyph_count = text_to_glyphs(
             t.buffer,
             glyphs,
@@ -2413,7 +2399,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
             text_append_str(&t, "_");
             text_append_i32(&t, (i32)(state.target_frames_per_second));
             text_append_str(&t, ".raw");
-            text_null_terminate(&t);
 
             framebuffer = VirtualAlloc(0, state.window_width * state.window_height * 3, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             video_file_handle = CreateFileA(t.buffer, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
