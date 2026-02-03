@@ -57,7 +57,7 @@ TYPES_STATIC_ASSERT(sizeof(f64) == 8, f64_size_must_be_8);
 TYPES_STATIC_ASSERT(sizeof(u64) == 8, u64_size_must_be_8);
 TYPES_STATIC_ASSERT(sizeof(i64) == 8, i64_size_must_be_8);
 
-/* Unfortunaly "modern" compilers sometimes inject memset intrinsics in the generated code 
+/* Unfortunaly "modern" compilers sometimes inject memset intrinsics in the generated code
  * even if the application does not call memset and even with -fno-builtin, ... set.
  * Therefore we have to provide our own memset function.
  */
@@ -630,14 +630,7 @@ SHADE_IT_API void win32_print(s8 *str)
 
   if (!log_file)
   {
-    log_file = CreateFileA(
-        "shade_it.log",
-        GENERIC_WRITE,
-        FILE_SHARE_READ,
-        0,
-        CREATE_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
-        0);
+    log_file = CreateFileA("shade_it.log", GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
   }
 
   {
@@ -665,14 +658,7 @@ SHADE_IT_API u8 *win32_file_read(s8 *filename, u32 *file_size_out)
   /* Retry loop for hot-reload: file might be locked or partially written */
   for (attempt = 0; attempt < 4; ++attempt)
   {
-    hFile = CreateFileA(
-        filename,
-        GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, /* Hot-reload safe */
-        0,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-        0);
+    hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, 0);
 
     if (hFile != INVALID_HANDLE)
     {
@@ -1127,6 +1113,11 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
     u32 dwSize = 0;
 
+    if (!state)
+    {
+      break;
+    }
+
     GetRawInputData((RAWINPUT *)lParam, RID_INPUT, (void *)0, &dwSize, sizeof(RAWINPUTHEADER));
 
     if (dwSize > sizeof(rawBuffer) ||
@@ -1211,7 +1202,7 @@ SHADE_IT_API i32 font_char_to_glyph_index(s8 c)
   }
 
   if (c >= 'A' && c <= 'Z') return c - 'A';
-  if (c >= '0' && c <= '9')  return 26 + (c - '0');
+  if (c >= '0' && c <= '9') return 26 + (c - '0');
   if (c == ':') return 36;
   if (c == '%') return 37;
   if (c == '/') return 38;
@@ -1231,20 +1222,15 @@ SHADE_IT_API void unpack_1bit_to_8bit(
 {
   u32 x;
   u32 y;
-  u32 bit_index;
-  u32 byte_index;
-  u32 bit;
-  u8 b;
 
   for (y = 0; y < height; ++y)
   {
     for (x = 0; x < width; ++x)
     {
-      bit_index = y * width + x;
-      byte_index = bit_index >> 3;
-      bit = 7 - (bit_index & 7);
-
-      b = (src[byte_index] >> bit) & 1;
+      u32 bit_index = y * width + x;
+      u32 byte_index = bit_index >> 3;
+      u32 bit = 7 - (bit_index & 7);
+      u8 b = (src[byte_index] >> bit) & 1;
 
       /* 1 = black, 0 = white */
       dst[bit_index] = b ? 0xFF : 0x00;
@@ -1258,8 +1244,7 @@ SHADE_IT_API void text_append_char(s8 *text, u32 text_size, u32 *len, s8 c)
   {
     return;
   }
-  text[*len] = c;
-  (*len)++;
+  text[(*len)++] = c;
   text[*len] = 0;
 }
 
@@ -1388,8 +1373,7 @@ SHADE_IT_API u32 text_to_glyphs(
 
     out_glyphs[count].x = x;
     out_glyphs[count].y = y;
-    out_glyphs[count].glyph_index = (f32)gi;
-    count++;
+    out_glyphs[count++].glyph_index = (f32)gi;
 
     x += (f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale;
   }
@@ -1648,9 +1632,6 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   win32_print("[opengl] version : ");
   win32_print(state->gl_version);
   win32_print("\n");
-
-  glViewport(0, 0, (i32)state->window_width, (i32)state->window_height);
-  glClearColor(state->window_clear_color_r, state->window_clear_color_g, state->window_clear_color_b, state->window_clear_color_a);
 
   return 1;
 }
@@ -1930,11 +1911,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   if (!opengl_create_context(&state))
   {
-    win32_print("[opengl] Could not create opengl context!\n");
+    win32_print("[ERROR] Could not create opengl context!\n");
     return 1;
   }
 
   /* Avoid clear color flickering */
+  glViewport(0, 0, (i32)state.window_width, (i32)state.window_height);
+  glClearColor(state.window_clear_color_r, state.window_clear_color_g, state.window_clear_color_b, state.window_clear_color_a);
   glDisable(GL_FRAMEBUFFER_SRGB);
   glDisable(GL_MULTISAMPLE);
   glClear(GL_COLOR_BUFFER_BIT);
