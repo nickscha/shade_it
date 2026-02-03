@@ -145,11 +145,11 @@ Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match*
 
 ### Borderless Mode (F9)
 
-You can enter the borderless window mode by pressing **F9**.
+You can enter/leave the borderless window mode by pressing **F9**.
 
 ### Fullscreen Mode (F11)
 
-You can enter the "classic" fullscreen window mode by pressing **F11**.
+You can enter/leave the "classic" fullscreen window mode by pressing **F11**.
 
 ### Pausing Shader (P)
 
