@@ -890,7 +890,7 @@ typedef struct win32_controller_state
 
 } win32_controller_state;
 
-SHADE_IT_API u8 win32_load_xinput(void)
+SHADE_IT_API u8 xinput_load(void)
 {
   void *xinput_lib = LoadLibraryA("xinput1_4.dll");
 
@@ -914,7 +914,7 @@ SHADE_IT_API u8 win32_load_xinput(void)
   return 1;
 }
 
-SHADE_IT_API f32 win32_process_thumbstick(i16 value, i16 deadzone)
+SHADE_IT_API f32 xinput_process_thumbstick(i16 value, i16 deadzone)
 {
   f32 result = 0.0f;
 
@@ -930,7 +930,7 @@ SHADE_IT_API f32 win32_process_thumbstick(i16 value, i16 deadzone)
   return result;
 }
 
-SHADE_IT_API SHADE_IT_INLINE f32 win32_process_trigger(u8 value)
+SHADE_IT_API SHADE_IT_INLINE f32 xinput_process_trigger(u8 value)
 {
   return value > XINPUT_GAMEPAD_TRIGGER_THRESHOLD ? (f32)value / 255.0f : 0.0f;
 }
@@ -1915,7 +1915,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   /* Load XInput Controller     */
   /******************************/
-  if (!win32_load_xinput())
+  if (!xinput_load())
   {
     win32_print("[WARNING] Could not load XInput (xinput1_4.dll, xinput1_3.dll or xinput9_1_0.dll)! XInput gamepads/controllers (e.g. XBOX) are not functional.\n");
   }
@@ -2156,14 +2156,14 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
             state.controller.back = (gp->wButtons & XINPUT_GAMEPAD_BACK) ? 1 : 0;
             state.controller.stick_left = (gp->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
             state.controller.stick_right = (gp->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
-            state.controller.trigger_left_value = win32_process_trigger(gp->bLeftTrigger);
-            state.controller.trigger_right_value = win32_process_trigger(gp->bRightTrigger);
+            state.controller.trigger_left_value = xinput_process_trigger(gp->bLeftTrigger);
+            state.controller.trigger_right_value = xinput_process_trigger(gp->bRightTrigger);
             state.controller.trigger_left = state.controller.trigger_left_value > 0.0f ? 1 : 0;
             state.controller.trigger_right = state.controller.trigger_right_value > 0.0f ? 1 : 0;
-            state.controller.stick_left_x = win32_process_thumbstick(gp->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-            state.controller.stick_left_y = win32_process_thumbstick(gp->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-            state.controller.stick_right_x = win32_process_thumbstick(gp->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
-            state.controller.stick_right_y = win32_process_thumbstick(gp->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+            state.controller.stick_left_x = xinput_process_thumbstick(gp->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+            state.controller.stick_left_y = xinput_process_thumbstick(gp->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+            state.controller.stick_right_x = xinput_process_thumbstick(gp->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+            state.controller.stick_right_y = xinput_process_thumbstick(gp->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
 
             /* TODO(nickscha): For now we support only one controller connected */
             break;
