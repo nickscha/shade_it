@@ -1238,26 +1238,33 @@ SHADE_IT_API void unpack_1bit_to_8bit(
   }
 }
 
-SHADE_IT_API void text_append_char(s8 *text, u32 text_size, u32 *len, s8 c)
+typedef struct text
 {
-  if (*len + 1 >= text_size)
+  u32 size;
+  u32 length;
+  s8 *buffer;
+} text;
+
+SHADE_IT_API void text_append_char(text *src, s8 c)
+{
+  if (src->length + 1 >= src->size)
   {
     return;
   }
-  text[(*len)++] = c;
-  text[*len] = 0;
+  src->buffer[src->length++] = c;
+  src->buffer[src->length] = 0;
 }
 
-SHADE_IT_API void text_append_str(s8 *text, u32 text_size, u32 *len, s8 *s)
+SHADE_IT_API void text_append_str(text *src, s8 *s)
 {
   while (*s)
   {
-    text_append_char(text, text_size, len, *s);
+    text_append_char(src, *s);
     s++;
   }
 }
 
-SHADE_IT_API void text_append_i32(s8 *text, u32 text_size, u32 *len, i32 v)
+SHADE_IT_API void text_append_i32(text *src, i32 v)
 {
   s8 buf[12];
   i32 i = 0;
@@ -1265,7 +1272,7 @@ SHADE_IT_API void text_append_i32(s8 *text, u32 text_size, u32 *len, i32 v)
 
   if (v < 0)
   {
-    text_append_char(text, text_size, len, '-');
+    text_append_char(src, '-');
     u = (u32)(-v);
   }
   else
@@ -1275,7 +1282,7 @@ SHADE_IT_API void text_append_i32(s8 *text, u32 text_size, u32 *len, i32 v)
 
   if (u == 0)
   {
-    text_append_char(text, text_size, len, '0');
+    text_append_char(src, '0');
     return;
   }
 
@@ -1287,45 +1294,45 @@ SHADE_IT_API void text_append_i32(s8 *text, u32 text_size, u32 *len, i32 v)
 
   while (i--)
   {
-    text_append_char(text, text_size, len, buf[i]);
+    text_append_char(src, buf[i]);
   }
 }
 
-SHADE_IT_API void text_append_f64(s8 *text, u32 text_size, u32 *len, f64 v, i32 decimals)
+SHADE_IT_API void text_append_f64(text *src, f64 v, i32 decimals)
 {
   i32 i;
   f64 frac;
 
   if (v < 0.0)
   {
-    text_append_char(text, text_size, len, '-');
+    text_append_char(src, '-');
     v = -v;
   }
 
   /* integer part */
-  text_append_i32(text, text_size, len, (i32)v);
-  text_append_char(text, text_size, len, '.');
+  text_append_i32(src, (i32)v);
+  text_append_char(src, '.');
 
   frac = v - (f64)((i32)v);
 
   for (i = 0; i < decimals; ++i)
   {
     frac *= 10.0;
-    text_append_char(text, text_size, len, (s8)('0' + ((i32)frac)));
+    text_append_char(src, (s8)('0' + ((i32)frac)));
     frac -= (f64)((i32)frac);
   }
 }
 
-SHADE_IT_API void text_null_terminate(s8 *text, u32 text_size, u32 *text_length)
+SHADE_IT_API void text_null_terminate(text *src)
 {
-  if (*text_length >= text_size)
+  if (src->length >= src->size)
   {
-    text[text_size - 1] = 0;
-    *text_length = text_size - 1;
+    src->buffer[src->size - 1] = 0;
+    src->length = src->size - 1;
     return;
   }
 
-  text[*text_length] = 0;
+  src->buffer[src->length] = 0;
 }
 
 typedef struct glyph
@@ -1776,7 +1783,7 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
 {
   static s8 *shader_font_code_vertex =
       "#version 330 core\n"
-      "layout(location = 0) in vec2 aPos;\n"
+      "layout(location = 0) in vec2 pos;\n"
       "layout(location = 1) in vec3 iGlyph;\n"
       "uniform vec3 iRes;\n"
       "uniform vec4 iTi;\n"
@@ -1786,11 +1793,11 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
       "{\n"
       "float gi = iGlyph.z;\n"
       "float cols = iTi.x / iTi.z;\n"
-      "vec2 pp = iGlyph.xy + aPos * vec2(iTi.z,iTi.w) * iFs;\n"
+      "vec2 pp = iGlyph.xy + pos * vec2(iTi.z,iTi.w) * iFs;\n"
       "vec2 ndc = (pp / iRes.xy) * 2.0 - 1.0;\n"
       "ndc.y = -ndc.y;\n"
       "gl_Position = vec4(ndc, 0.0, 1.0);\n"
-      "vUV = vec2((mod(gi, cols) + aPos.x) * iTi.z / iTi.x, (floor(gi / cols) + aPos.y) * iTi.w / iTi.y);\n"
+      "vUV = vec2((mod(gi, cols) + pos.x) * iTi.z / iTi.x, (floor(gi / cols) + pos.y) * iTi.w / iTi.y);\n"
       "}\n";
 
   static s8 *shader_font_code_fragment =
@@ -1986,7 +1993,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
 
-    /* aPos */
+    /* pos (location = 0) */
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(f32), (void *)0);
     glVertexAttribDivisor(0, 0);
@@ -2204,10 +2211,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       if (ui_enabled)
       {
-
-        s8 text[1024];
-        u32 text_size = sizeof(text);
-        u32 text_length = 0;
+        s8 buffer[1024];
+        text t = {0};
 
         glyph glyphs[1024];
         u32 glyph_count;
@@ -2217,102 +2222,102 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         process_memory_info mem = {0};
 
         /* build UI string */
-        text[0] = 0;
-        text_append_str(text, text_size, &text_length, "FPS        : ");
-        text_append_f64(text, text_size, &text_length, state.iFrameRate, 2);
-        text_append_str(text, text_size, &text_length, "\nFPS TARGET : ");
-        text_append_f64(text, text_size, &text_length, state.target_frames_per_second, 2);
-        text_append_str(text, text_size, &text_length, "\nFPS RAW    : ");
-        text_append_f64(text, text_size, &text_length, state.iFrameRateRaw, 2);
-        text_append_str(text, text_size, &text_length, "\nFRAME      : ");
-        text_append_i32(text, text_size, &text_length, state.iFrame);
-        text_append_str(text, text_size, &text_length, "\nDELTA      : ");
-        text_append_f64(text, text_size, &text_length, state.iTimeDelta, 6);
-        text_append_str(text, text_size, &text_length, "\nTIME       : ");
-        text_append_f64(text, text_size, &text_length, state.iTime, 6);
-        text_append_str(text, text_size, &text_length, "\nMOUSE X/Y  : ");
-        text_append_i32(text, text_size, &text_length, state.mouse_x);
-        text_append_str(text, text_size, &text_length, "/");
-        text_append_i32(text, text_size, &text_length, state.mouse_y);
-        text_append_str(text, text_size, &text_length, "\nMOUSE DX/DY: ");
-        text_append_i32(text, text_size, &text_length, state.mouse_dx);
-        text_append_str(text, text_size, &text_length, "/");
-        text_append_i32(text, text_size, &text_length, state.mouse_dy);
-        text_append_str(text, text_size, &text_length, "\nSIZE  X/Y  : ");
-        text_append_i32(text, text_size, &text_length, (i32)state.window_width);
-        text_append_str(text, text_size, &text_length, "/");
-        text_append_i32(text, text_size, &text_length, (i32)state.window_height);
-        text_append_str(text, text_size, &text_length, "\nTHREADS    : ");
-        text_append_i32(text, text_size, &text_length, thread_count);
+        t.size = sizeof(buffer);
+        t.buffer = buffer;
+        t.buffer[0] = 0;
+        text_append_str(&t, "FPS        : ");
+        text_append_f64(&t, state.iFrameRate, 2);
+        text_append_str(&t, "\nFPS TARGET : ");
+        text_append_f64(&t, state.target_frames_per_second, 2);
+        text_append_str(&t, "\nFPS RAW    : ");
+        text_append_f64(&t, state.iFrameRateRaw, 2);
+        text_append_str(&t, "\nFRAME      : ");
+        text_append_i32(&t, state.iFrame);
+        text_append_str(&t, "\nDELTA      : ");
+        text_append_f64(&t, state.iTimeDelta, 6);
+        text_append_str(&t, "\nTIME       : ");
+        text_append_f64(&t, state.iTime, 6);
+        text_append_str(&t, "\nMOUSE X/Y  : ");
+        text_append_i32(&t, state.mouse_x);
+        text_append_str(&t, "/");
+        text_append_i32(&t, state.mouse_y);
+        text_append_str(&t, "\nMOUSE DX/DY: ");
+        text_append_i32(&t, state.mouse_dx);
+        text_append_str(&t, "/");
+        text_append_i32(&t, state.mouse_dy);
+        text_append_str(&t, "\nSIZE  X/Y  : ");
+        text_append_i32(&t, (i32)state.window_width);
+        text_append_str(&t, "/");
+        text_append_i32(&t, (i32)state.window_height);
+        text_append_str(&t, "\nTHREADS    : ");
+        text_append_i32(&t, thread_count);
 
         if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
         {
-          text_append_str(text, text_size, &text_length, "\nHANDLES    : ");
-          text_append_i32(text, text_size, &text_length, (i32)handle_count);
+          text_append_str(&t, "\nHANDLES    : ");
+          text_append_i32(&t, (i32)handle_count);
         }
 
         if (win32_process_memory(&mem))
         {
-          text_append_str(text, text_size, &text_length, "\nMEM WORK   : ");
-          text_append_i32(text, text_size, &text_length, (i32)(mem.working_set / (1024)));
-
-          text_append_str(text, text_size, &text_length, "\nMEM PEAK   : ");
-          text_append_i32(text, text_size, &text_length, (i32)(mem.peak_working_set / (1024)));
-
-          text_append_str(text, text_size, &text_length, "\nMEM COMMIT : ");
-          text_append_i32(text, text_size, &text_length, (i32)(mem.private_bytes / (1024)));
+          text_append_str(&t, "\nMEM WORK   : ");
+          text_append_i32(&t, (i32)(mem.working_set / (1024)));
+          text_append_str(&t, "\nMEM PEAK   : ");
+          text_append_i32(&t, (i32)(mem.peak_working_set / (1024)));
+          text_append_str(&t, "\nMEM COMMIT : ");
+          text_append_i32(&t, (i32)(mem.private_bytes / (1024)));
         }
 
-        text_append_str(text, text_size, &text_length, "\nGL VENDOR  : ");
-        text_append_str(text, text_size, &text_length, state.gl_vendor);
-        text_append_str(text, text_size, &text_length, "\nGL RENDER  : ");
-        text_append_str(text, text_size, &text_length, state.gl_renderer);
-        text_append_str(text, text_size, &text_length, "\nGL VERSION : ");
-        text_append_str(text, text_size, &text_length, state.gl_version);
-        text_append_str(text, text_size, &text_length, "\nGL ERROR FS: ");
-        text_append_str(text, text_size, &text_length, main_shader.header.had_failure ? shader_info_log : "NONE");
+        text_append_str(&t, "\nGL VENDOR  : ");
+        text_append_str(&t, state.gl_vendor);
+        text_append_str(&t, "\nGL RENDER  : ");
+        text_append_str(&t, state.gl_renderer);
+        text_append_str(&t, "\nGL VERSION : ");
+        text_append_str(&t, state.gl_version);
+        text_append_str(&t, "\nGL ERROR FS: ");
+        text_append_str(&t, main_shader.header.had_failure ? shader_info_log : "NONE");
 
         if (state.controller.connected)
         {
-          text_append_str(text, text_size, &text_length, "\nCONTROLLER : CONNECTED");
-          text_append_str(text, text_size, &text_length, "\nSTICK L X/Y: ");
-          text_append_f64(text, text_size, &text_length, state.controller.stick_left_x, 6);
-          text_append_str(text, text_size, &text_length, "/");
-          text_append_f64(text, text_size, &text_length, state.controller.stick_left_y, 6);
-          text_append_str(text, text_size, &text_length, "\nSTICK R X/Y: ");
-          text_append_f64(text, text_size, &text_length, state.controller.stick_right_x, 6);
-          text_append_str(text, text_size, &text_length, "/");
-          text_append_f64(text, text_size, &text_length, state.controller.stick_right_y, 6);
-          text_append_str(text, text_size, &text_length, "\nTRIGGER L/R: ");
-          text_append_f64(text, text_size, &text_length, state.controller.trigger_left_value, 6);
-          text_append_str(text, text_size, &text_length, "/");
-          text_append_f64(text, text_size, &text_length, state.controller.trigger_right_value, 6);
-          text_append_str(text, text_size, &text_length, "\nBUTTONS    : ");
+          text_append_str(&t, "\nCONTROLLER : CONNECTED");
+          text_append_str(&t, "\nSTICK L X/Y: ");
+          text_append_f64(&t, state.controller.stick_left_x, 6);
+          text_append_str(&t, "/");
+          text_append_f64(&t, state.controller.stick_left_y, 6);
+          text_append_str(&t, "\nSTICK R X/Y: ");
+          text_append_f64(&t, state.controller.stick_right_x, 6);
+          text_append_str(&t, "/");
+          text_append_f64(&t, state.controller.stick_right_y, 6);
+          text_append_str(&t, "\nTRIGGER L/R: ");
+          text_append_f64(&t, state.controller.trigger_left_value, 6);
+          text_append_str(&t, "/");
+          text_append_f64(&t, state.controller.trigger_right_value, 6);
+          text_append_str(&t, "\nBUTTONS    : ");
 
           /* clang-format off */
-          if (state.controller.button_a)       text_append_str(text, text_size, &text_length, "A ");
-          if (state.controller.button_b)       text_append_str(text, text_size, &text_length, "B ");
-          if (state.controller.button_x)       text_append_str(text, text_size, &text_length, "X ");
-          if (state.controller.button_y)       text_append_str(text, text_size, &text_length, "Y ");
-          if (state.controller.dpad_left)      text_append_str(text, text_size, &text_length, "DLEFT ");
-          if (state.controller.dpad_right)     text_append_str(text, text_size, &text_length, "DRIGHT ");
-          if (state.controller.dpad_up)        text_append_str(text, text_size, &text_length, "DUP ");
-          if (state.controller.dpad_down)      text_append_str(text, text_size, &text_length, "DDOWN ");
-          if (state.controller.stick_left)     text_append_str(text, text_size, &text_length, "LSTICK ");
-          if (state.controller.stick_right)    text_append_str(text, text_size, &text_length, "RSTICK ");
-          if (state.controller.shoulder_left)  text_append_str(text, text_size, &text_length, "LSHOULDER ");
-          if (state.controller.shoulder_right) text_append_str(text, text_size, &text_length, "RSHOULDER ");
+          if (state.controller.button_a)       text_append_str(&t, "A ");
+          if (state.controller.button_b)       text_append_str(&t, "B ");
+          if (state.controller.button_x)       text_append_str(&t, "X ");
+          if (state.controller.button_y)       text_append_str(&t, "Y ");
+          if (state.controller.dpad_left)      text_append_str(&t, "DLEFT ");
+          if (state.controller.dpad_right)     text_append_str(&t, "DRIGHT ");
+          if (state.controller.dpad_up)        text_append_str(&t, "DUP ");
+          if (state.controller.dpad_down)      text_append_str(&t, "DDOWN ");
+          if (state.controller.stick_left)     text_append_str(&t, "LSTICK ");
+          if (state.controller.stick_right)    text_append_str(&t, "RSTICK ");
+          if (state.controller.shoulder_left)  text_append_str(&t, "LSHOULDER ");
+          if (state.controller.shoulder_right) text_append_str(&t, "RSHOULDER ");
           /* clang-format on */
         }
         else
         {
-          text_append_str(text, text_size, &text_length, "\nCONTROLLER : NOT FOUND");
+          text_append_str(&t, "\nCONTROLLER : NOT FOUND");
         }
 
-        text_null_terminate(text, text_size, &text_length);
+        text_null_terminate(&t);
 
         glyph_count = text_to_glyphs(
-            text,
+            t.buffer,
             glyphs,
             sizeof(glyphs) / sizeof(glyphs[0]),
             10.0f, /* x */
@@ -2357,25 +2362,27 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
           if (!screen_recording_initialized)
           {
-            s8 record_file_name[1024];
-            u32 record_file_name_size = sizeof(record_file_name);
-            u32 record_file_name_length = 0;
+            s8 buffer[128];
+            text t = {0};
+
+            t.size = sizeof(buffer);
+            t.buffer = buffer;
 
             /* Create recording output file name.
              * Format:  shade_it_capture_<window_width>x<window_height>_<target_frames_per_second>.raw
              * Example: shade_it_capture_800x600_60.raw
              */
-            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, "shade_it_capture_");
-            text_append_i32(record_file_name, record_file_name_size, &record_file_name_length, (i32)(state.window_width));
-            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, "x");
-            text_append_i32(record_file_name, record_file_name_size, &record_file_name_length, (i32)(state.window_height));
-            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, "_");
-            text_append_i32(record_file_name, record_file_name_size, &record_file_name_length, (i32)(state.target_frames_per_second));
-            text_append_str(record_file_name, record_file_name_size, &record_file_name_length, ".raw");
-            text_null_terminate(record_file_name, record_file_name_size, &record_file_name_length);
+            text_append_str(&t, "shade_it_capture_");
+            text_append_i32(&t, (i32)(state.window_width));
+            text_append_str(&t, "x");
+            text_append_i32(&t, (i32)(state.window_height));
+            text_append_str(&t, "_");
+            text_append_i32(&t, (i32)(state.target_frames_per_second));
+            text_append_str(&t, ".raw");
+            text_null_terminate(&t);
 
             framebuffer = VirtualAlloc(0, state.window_width * state.window_height * 3, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-            video_file_handle = CreateFileA(record_file_name, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+            video_file_handle = CreateFileA(t.buffer, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
