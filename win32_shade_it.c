@@ -2256,8 +2256,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         /* build UI string */
         t.size = sizeof(buffer);
         t.buffer = buffer;
-        
-        text_append_str(&t, "FPS        : ");
+
+        text_append_str(&t, "PAUSED     : ");
+        text_append_str(&t, shader_paused ? "YES" : "NO");
+        text_append_str(&t, "\nFPS        : ");
         text_append_f64(&t, state.iFrameRate, 2);
         text_append_str(&t, "\nFPS TARGET : ");
         text_append_f64(&t, state.target_frames_per_second, 2);
