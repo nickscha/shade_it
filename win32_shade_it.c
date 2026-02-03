@@ -115,6 +115,8 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 
 #define CS_OWNDC 0x0020
 
+#define HWND_TOP ((void *)0)
+
 #define WS_CLIPSIBLINGS 0x04000000
 #define WS_CLIPCHILDREN 0x02000000
 #define WS_THICKFRAME 0x00040000L
@@ -122,10 +124,21 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define WS_MAXIMIZEBOX 0x00010000L
 #define WS_CAPTION 0x00C00000L
 #define WS_SYSMENU 0x00080000L
+#define WS_OVERLAPPED 0x00000000L
+#define WS_OVERLAPPEDWINDOW (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
 
+#define SWP_NOSIZE 0x0001
+#define SWP_NOMOVE 0x0002
+#define SWP_NOZORDER 0x0004
+#define SWP_SHOWWINDOW 0x0040
+#define SWP_NOOWNERZORDER 0x0200
+#define SWP_FRAMECHANGED 0x0020
 #define SW_SHOW 5
 
+#define GWL_STYLE -16
 #define GWLP_USERDATA -21
+
+#define MONITOR_DEFAULTTONEAREST 0x00000002
 
 #define PM_REMOVE 0x0001
 
@@ -336,6 +349,25 @@ typedef struct THREADENTRY32
   u32 dwFlags;
 } THREADENTRY32;
 
+typedef struct WINDOWPLACEMENT
+{
+  u32 length;
+  u32 flags;
+  u32 showCmd;
+  POINT ptMinPosition;
+  POINT ptMaxPosition;
+  RECT rcNormalPosition;
+  RECT rcDevice;
+} WINDOWPLACEMENT;
+
+typedef struct MONITORINFO
+{
+  u32 cbSize;
+  RECT rcMonitor;
+  RECT rcWork;
+  u32 dwFlags;
+} MONITORINFO;
+
 /* clang-format off */
 WIN32_API(void *) GetStdHandle(u32 nStdHandle);
 WIN32_API(i32)    CloseHandle(void *hObject);
@@ -381,6 +413,15 @@ WIN32_API(i32)    RegisterRawInputDevices(RAWINPUTDEVICE* pRawInputDevices, u32 
 WIN32_API(u32)    GetRawInputData(void *hRawInput, u32 uiCommand, void *pData, u32 *pcbSize, u32 cbSizeHeader);
 WIN32_API(i32)    GetCursorPos(POINT *lpPoint);
 WIN32_API(i32)    ScreenToClient(void *hWnd, POINT *lpPoint);
+
+WIN32_API(i32)    GetWindowLongA(void *hWnd, i32 nIndex);
+WIN32_API(i32)    GetWindowPlacement(void *hWnd, WINDOWPLACEMENT *lpwndpl);
+WIN32_API(i32)    GetMonitorInfoA(void *hMonitor, MONITORINFO* lpmi);
+WIN32_API(void *) MonitorFromWindow(void *hwnd, u32 dwFlags);
+WIN32_API(i32)    SetWindowLongA(void *hWnd, i32 nIndex, i32 dwNewLong);
+WIN32_API(i32)    SetWindowPos(void *hWnd, void *hWndInsertAfter, i32 X, i32 Y, i32 cx, i32 cy, u32 uFlags);
+WIN32_API(i32)    SetWindowPlacement(void *hWnd, WINDOWPLACEMENT *lpwndpl);
+WIN32_API(i32)    GetClientRect(void *hWnd, RECT* lpRect);
 
 WIN32_API(void *) GetCurrentProcess(void);
 WIN32_API(u32)    GetCurrentProcessId(void);
@@ -1161,6 +1202,90 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
   return (result);
 }
 
+static WINDOWPLACEMENT g_wpPrev = {0};
+
+SHADE_IT_API void win32_window_enter_fullscreen(win32_shade_it_state *state)
+{
+  i32 dwStyle = GetWindowLongA(state->window_handle, GWL_STYLE);
+
+  if (dwStyle & WS_OVERLAPPEDWINDOW)
+  {
+    if (GetWindowPlacement(state->window_handle, &g_wpPrev))
+    {
+      MONITORINFO mi;
+      mi.cbSize = sizeof(mi);
+
+      GetMonitorInfoA(MonitorFromWindow(state->window_handle, MONITOR_DEFAULTTONEAREST), &mi);
+      SetWindowLongA(state->window_handle, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+
+      SetWindowPos(
+          state->window_handle, HWND_TOP,
+          mi.rcMonitor.left, mi.rcMonitor.top,
+          mi.rcMonitor.right - mi.rcMonitor.left,
+          mi.rcMonitor.bottom - mi.rcMonitor.top,
+          SWP_NOOWNERZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+      state->window_width_pending = (u32)(mi.rcMonitor.right - mi.rcMonitor.left);
+      state->window_height_pending = (u32)(mi.rcMonitor.bottom - mi.rcMonitor.top);
+      state->window_size_changed = 1;
+    }
+  }
+}
+
+SHADE_IT_API void win32_window_enter_borderless(win32_shade_it_state *state)
+{
+  if (GetWindowPlacement(state->window_handle, &g_wpPrev))
+  {
+    i32 dwStyle = GetWindowLongA(state->window_handle, GWL_STYLE);
+
+    MONITORINFO mi;
+    mi.cbSize = sizeof(mi);
+
+    GetMonitorInfoA(MonitorFromWindow(state->window_handle, MONITOR_DEFAULTTONEAREST), &mi);
+    SetWindowLongA(state->window_handle, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+    
+    SetWindowPos(
+        state->window_handle, HWND_TOP,
+        mi.rcMonitor.left, mi.rcMonitor.top,
+        mi.rcMonitor.right - mi.rcMonitor.left,
+        mi.rcMonitor.bottom - mi.rcMonitor.top,
+        SWP_NOOWNERZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+    state->window_width_pending = (u32)(mi.rcMonitor.right - mi.rcMonitor.left);
+    state->window_height_pending = (u32)(mi.rcMonitor.bottom - mi.rcMonitor.top);
+    state->window_size_changed = 1;
+  }
+}
+
+SHADE_IT_API void win32_window_enter_windowed(win32_shade_it_state *state)
+{
+  i32 dwStyle = GetWindowLongA(state->window_handle, GWL_STYLE);
+
+  if (!(dwStyle & WS_OVERLAPPEDWINDOW))
+  {
+    RECT rect;
+
+    SetWindowLongA(state->window_handle, GWL_STYLE, WS_OVERLAPPEDWINDOW);
+    SetWindowPlacement(state->window_handle, &g_wpPrev);
+    SetWindowPos(state->window_handle, (void *)0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    GetClientRect(state->window_handle, &rect);
+
+    state->window_width_pending = (u32)(rect.right - rect.left);
+    state->window_height_pending = (u32)(rect.bottom - rect.top);
+    state->window_size_changed = 1;
+  }
+  else
+  {
+    /* resize windowed mode */
+    RECT rect = {0};
+    rect.right = (i32)state->window_width;
+    rect.bottom = (i32)state->window_height;
+
+    AdjustWindowRect(&rect, (u32)GetWindowLongA(state->window_handle, GWL_STYLE), 0);
+    SetWindowPos(state->window_handle, (void *)0, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+  }
+}
+
 /* #############################################################################
  * # [SECTION] Font Loading and Parsing
  * #############################################################################
@@ -1882,7 +2007,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   u32 glyph_vbo;
 
   state.running = 1;
-  state.window_title = "shade_it v0.6 (F1=Debug UI, F2=Screen Recording, P=Pause Shader)";
+  state.window_title = "shade_it v0.6 (F1=Debug UI, F2=Screen Recording, P=Pause, F9=Borderless, F11=Fullscreen)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
@@ -2022,6 +2147,8 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
     u8 shader_paused = 0;
     u8 ui_enabled = 0;
+    u8 fullscreen_enabled = 0;
+    u8 borderless_enabled = 0;
     u8 screen_recording_enabled = 0;
     u8 screen_recording_initialized = 0;
 
@@ -2168,6 +2295,41 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
             /* TODO(nickscha): For now we support only one controller connected */
             break;
           }
+        }
+      }
+
+      /******************************/
+      /* Full or Borderless (F9,F11)*/
+      /******************************/
+      if (state.keys[0x78].is_down && !state.keys[0x78].was_down) /* F9 */
+      {
+        borderless_enabled = !borderless_enabled;
+
+        if (borderless_enabled && !fullscreen_enabled)
+        {
+          win32_window_enter_borderless(&state);
+        }
+        else
+        {
+          fullscreen_enabled = 0;
+          borderless_enabled = 0;
+          win32_window_enter_windowed(&state);
+        }
+      }
+
+      if (state.keys[0x7A].is_down && !state.keys[0x7A].was_down) /* F11 */
+      {
+        fullscreen_enabled = !fullscreen_enabled;
+
+        if (fullscreen_enabled && !borderless_enabled)
+        {
+          win32_window_enter_fullscreen(&state);
+        }
+        else
+        {
+          fullscreen_enabled = 0;
+          borderless_enabled = 0;
+          win32_window_enter_windowed(&state);
         }
       }
 

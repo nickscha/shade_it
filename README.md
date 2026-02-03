@@ -31,8 +31,9 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 - **Hot GLSL Shader reloading** - Saved changes to the GLSL file will be immediatly visible
 - **Minimal binary size** — around **28kb** binary
 - **Zero dependencies** — own win32 layer implementation, own OpenGL context creation
-- **Debug UI** - Press F1 to see performance metrics and GLSL compilation errors/logs
-- **Screen Recording** - Press F2 to start/stop recording the screen to a raw video file
+- **Debug UI** - Press **F1** to see performance metrics and GLSL compilation errors/logs
+- **Screen Recording** - Press **F2** to start/stop recording the screen to a raw video file
+- **Fullscreen Support** - Press **F9** for borderless. Press **F11** for classic fullscreen mode
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
 - **no memory allocation** — There is **no memory allocation** by the tool itself. It only uses the memory Windows is acquiring for the OpenGL Framebuffers, ...
@@ -141,6 +142,14 @@ ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture_800x600_6
 ```
 
 Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
+
+### Borderless Mode (F9)
+
+You can enter the borderless window mode by pressing **F9**.
+
+### Fullscreen Mode (F11)
+
+You can enter the "classic" fullscreen window mode by pressing **F11**.
 
 ### Pausing Shader (P)
 
