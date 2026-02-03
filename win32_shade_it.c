@@ -720,7 +720,7 @@ SHADE_IT_API SHADE_IT_INLINE FILETIME win32_file_mod_time(s8 *file)
   return GetFileAttributesExA(file, 0, &fad) ? fad.ftLastWriteTime : empty;
 }
 
-SHADE_IT_API SHADE_IT_INLINE void win32_enable_high_priority(void)
+SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_priority(void)
 {
   /* TODO(nickscha): Check integrated plus discrete GPU
    *
@@ -749,9 +749,11 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_high_priority(void)
   (void)ES_CONTINUOUS;
   (void)ES_DISPLAY_REQUIRED;
   (void)ES_SYSTEM_REQUIRED;
+
+  return 1;
 }
 
-SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
+SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_dpi_awareness(void)
 {
   void *shcore = LoadLibraryA("Shcore.dll");
 
@@ -773,6 +775,8 @@ SHADE_IT_API SHADE_IT_INLINE void win32_enable_dpi_awareness(void)
   {
     SetProcessDPIAware();
   }
+
+  return 1;
 }
 
 SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_resolution_timer(void)
@@ -790,7 +794,6 @@ SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_resolution_timer(void)
 
     if (!timeBeginPeriod)
     {
-      win32_print("[win32] cannot load timeBeginPeriod from Winmm.dll\n");
       return 0;
     }
 
@@ -801,7 +804,6 @@ SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_resolution_timer(void)
     /* TIMERR_NOCANDO */
     if (res == 97)
     {
-      win32_print("[win32] cannot set timeBeginPeriod(1)\n");
       return 0;
     }
   }
@@ -1890,19 +1892,25 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /******************************/
   /* Set Process Priorities     */
   /******************************/
-  win32_enable_high_priority();
+  if (!win32_enable_high_priority())
+  {
+    win32_print("[WARNING] Failed to set high priority process\n");
+  }
 
   /******************************/
   /* Set DPI aware mode         */
   /******************************/
-  win32_enable_dpi_awareness();
+  if (!win32_enable_dpi_awareness())
+  {
+    win32_print("[WARNING] Cannot set DPI awareness\n");
+  }
 
   /******************************/
   /* HighRes timer for Sleep(1) */
   /******************************/
   if (!win32_enable_high_resolution_timer())
   {
-    win32_print("[WARNING] Cannot set win32 high resolution timer\n");
+    win32_print("[WARNING] Cannot set win32 high resolution timer using Winmm.dll (timeBeginPeriod)\n");
   }
 
   /******************************/
@@ -1932,6 +1940,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   /* Make the window visible */
   ShowWindow(state.window_handle, SW_SHOW);
 
+  /******************************/
+  /* Initialize Shaders         */
+  /******************************/
   {
     /* Generate a dummy vao with no buffer */
     glGenVertexArrays(1, &main_vao);
@@ -1947,6 +1958,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     opengl_shader_load_shader_recording(&recording_shader);
   }
 
+  /******************************/
+  /* Initialize Font Texture    */
+  /******************************/
   {
     /* Generate font texture */
     u8 shade_it_font_pixels[SHADE_IT_FONT_WIDTH * SHADE_IT_FONT_HEIGHT];
@@ -1966,6 +1980,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     glActiveTexture(GL_TEXTURE0);
   }
 
+  /******************************/
+  /* Initialize Font Buffers    */
+  /******************************/
   {
     static f32 quad_vertices[] = {
         0.0f, 0.0f,
@@ -2112,7 +2129,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
            Better to query from time to time the connected controller and then
            only update this controller per frame.
         */
-        for (i = 0; i < XINPUT_USER_MAX_COUNT; ++i)
+       (void) XINPUT_USER_MAX_COUNT;
+
+        for (i = 0; i < 1; ++i)
         {
           XINPUT_STATE xinput_state = {0};
           u32 result = XInputGetState(i, &xinput_state);
