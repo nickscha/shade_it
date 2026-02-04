@@ -2356,9 +2356,22 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       glClear(GL_COLOR_BUFFER_BIT);
 
+      /******************************/
+      /* Pause Shader (P)           */
+      /******************************/
       if (state.keys_is_down[0x50] && !state.keys_was_down[0x50]) /* P */
       {
         shader_paused = !shader_paused;
+      }
+
+      /******************************/
+      /* Reset Timer (R)            */
+      /******************************/
+      if (state.keys_is_down[0x52] && !state.keys_was_down[0x52]) /* R */
+      {
+        /* Reset iTime elapsed seconds on hot reload */
+        QueryPerformanceCounter(&time_start);
+        state.iFrame = 0;
       }
 
       glUseProgram(main_shader.header.program);
