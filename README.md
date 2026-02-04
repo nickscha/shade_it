@@ -166,6 +166,10 @@ When connected you can also see button presses, thumbstick and trigger values in
 
 The controller state is packed into a `uniform vec4 iController[2]` for shaders.
 
+#### Watch the demo video
+
+https://github.com/user-attachments/assets/5d5d7a17-3adb-415b-824e-edeaeb37b651
+
 #### Uniform `iController` Mapping
 
 | Vector Index | Component | GLSL Access | Type | Description | Range |
