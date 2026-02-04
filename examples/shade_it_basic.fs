@@ -4,14 +4,15 @@
 out vec4 FragColor;
 
 /* Uniforms provided */
-uniform vec3  iResolution;
-uniform float iTime;
-uniform float iTimeDelta;
-uniform int   iFrame;
-uniform float iFrameRate;
-uniform vec4  iMouse;
-uniform vec4  iTextureInfo;
-uniform sampler2D iTexture;
+uniform vec3  iResolution;   // viewport width and height
+uniform float iTime;         // time elapsed in seconds
+uniform float iTimeDelta;    // render time in seconds
+uniform int   iFrame;        // total frame counter
+uniform float iFrameRate;    // current frames per second
+uniform vec4  iMouse;        // mouse position (x,y)
+uniform vec4  iTextureInfo;  // texture width, height, cell width, cell height
+uniform sampler2D iTexture;  // texture slot
+uniform vec4 iController[2]; // full controller state
 
 void mainImage(out vec4 outColor, in vec2 fragCoord)
 {

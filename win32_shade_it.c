@@ -593,6 +593,9 @@ static PFNGLUNIFORM3FPROC glUniform3f;
 typedef void (*PFNGLUNIFORM4FPROC)(i32 location, f32 v0, f32 v1, f32 v2, f32 v3);
 static PFNGLUNIFORM4FPROC glUniform4f;
 
+typedef void (*PFNGLUNIFORM4FVPROC)(i32 location, i32 count, f32 *value);
+static PFNGLUNIFORM4FVPROC glUniform4fv;
+
 typedef void (*PFNGLACTIVETEXTUREPROC)(u32 texture);
 static PFNGLACTIVETEXTUREPROC glActiveTexture;
 
@@ -1552,6 +1555,7 @@ typedef struct shader_main
   i32 loc_iMouse;
   i32 loc_iTextureInfo;
   i32 loc_iTexture;
+  i32 loc_iController;
 
 } shader_main;
 
@@ -1699,6 +1703,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
   glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
   glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
+  glUniform4fv = (PFNGLUNIFORM4FVPROC)wglGetProcAddress("glUniform4fv");
   glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
   glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers");
   glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
@@ -1912,6 +1917,7 @@ SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader
     shader->loc_iMouse = glGetUniformLocation(shader->header.program, "iMouse");
     shader->loc_iTextureInfo = glGetUniformLocation(shader->header.program, "iTextureInfo");
     shader->loc_iTexture = glGetUniformLocation(shader->header.program, "iTexture");
+    shader->loc_iController = glGetUniformLocation(shader->header.program, "iController");
   }
 
   VirtualFree(shader_code_fragment, 0, MEM_RELEASE);
@@ -2367,6 +2373,59 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         glUniform4f(main_shader.loc_iMouse, (f32)state.mouse_x, (f32)state.mouse_y, (f32)state.mouse_dx, (f32)state.mouse_dy);
         glUniform4f(main_shader.loc_iTextureInfo, SHADE_IT_FONT_WIDTH, SHADE_IT_FONT_HEIGHT, SHADE_IT_FONT_GLYPH_WIDTH, SHADE_IT_FONT_GLYPH_HEIGHT);
         glUniform1i(main_shader.loc_iTexture, 0);
+
+        /* Pack XInput Controller State into uniform vec4 iController[2];*/
+        if (state.controller.connected)
+        {
+
+          f32 iControllerData[8];
+          u32 bits = 0;
+
+          union
+          {
+            f32 f;
+            u32 u;
+          } punner;
+
+          iControllerData[0] = state.controller.stick_left_x;
+          iControllerData[1] = state.controller.stick_left_y;
+          iControllerData[2] = state.controller.stick_right_x;
+          iControllerData[3] = state.controller.stick_right_y;
+          iControllerData[4] = state.controller.trigger_left_value;
+          iControllerData[5] = state.controller.trigger_right_value;
+
+#define PACK_BTN(field, bit) \
+  if (field)                 \
+  bits |= (1u << (bit))
+
+          /* Pack all 17 button states into one 32-bit integer */
+          PACK_BTN(state.controller.button_a, 0);
+          PACK_BTN(state.controller.button_b, 1);
+          PACK_BTN(state.controller.button_x, 2);
+          PACK_BTN(state.controller.button_y, 3);
+          PACK_BTN(state.controller.shoulder_left, 4);
+          PACK_BTN(state.controller.shoulder_right, 5);
+          PACK_BTN(state.controller.trigger_left, 6);  /* Digital threshold version */
+          PACK_BTN(state.controller.trigger_right, 7); /* Digital threshold version */
+          PACK_BTN(state.controller.dpad_up, 8);
+          PACK_BTN(state.controller.dpad_down, 9);
+          PACK_BTN(state.controller.dpad_left, 10);
+          PACK_BTN(state.controller.dpad_right, 11);
+          PACK_BTN(state.controller.stick_left, 12);  /* Thumbstick click */
+          PACK_BTN(state.controller.stick_right, 13); /* Thumbstick click */
+          PACK_BTN(state.controller.start, 14);
+          PACK_BTN(state.controller.back, 15);
+          PACK_BTN(state.controller.connected, 16);
+
+#undef PACK_BTN
+
+          punner.u = bits;
+
+          iControllerData[6] = punner.f;
+          iControllerData[7] = 0.0f; /* padding*/
+
+          glUniform4fv(main_shader.loc_iController, 2, iControllerData);
+        }
       }
 
       glBindVertexArray(main_vao);

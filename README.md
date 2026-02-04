@@ -81,14 +81,15 @@ If you want to create your own **GLSL fragment shader from scratch** you can use
 out vec4 FragColor;
 
 /* Uniforms provided */
-uniform vec3  iResolution;  // viewport width and height
-uniform float iTime;        // time elapsed in seconds
-uniform float iTimeDelta;   // render time in seconds
-uniform int   iFrame;       // total frame counter
-uniform float iFrameRate;   // current frames per second
-uniform vec4  iMouse;       // mouse position (x,y)
-uniform vec4  iTextureInfo; // texture width, height, cell width, cell height
-uniform sampler2d iTexture; // texture slot
+uniform vec3  iResolution;   // viewport width and height
+uniform float iTime;         // time elapsed in seconds
+uniform float iTimeDelta;    // render time in seconds
+uniform int   iFrame;        // total frame counter
+uniform float iFrameRate;    // current frames per second
+uniform vec4  iMouse;        // mouse position (x,y)
+uniform vec4  iTextureInfo;  // texture width, height, cell width, cell height
+uniform sampler2D iTexture;  // texture slot
+uniform vec4 iController[2]; // full controller state
 
 /* DEMO: Render gradient colors accross the entire screen */
 void mainImage(out vec4 outColor, in vec2 fragCoord)
@@ -113,13 +114,6 @@ When the application is started it will write a log file named **shade_it.log**.
 Beside the Debug UI you can also find here GLSL compilation errors if a shader is invalid.
 
 If you encounter a problem/bug please attach this log file to the issue.
-
-### XInput Controller Support
-
-SHADE_IT supports XInput compatible controllers.
-When connected you can also see button presses, thumbstick and trigger values in the **Debug UI** (F1).
-
-<a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_controller.png"></a>
 
 ### Show Debug UI (F1)
 
@@ -162,6 +156,89 @@ You can enter/leave the "classic" fullscreen window mode by pressing **F11**.
 
 If you want to freeze/pause the current shader display you can press **P**.
 
+### XInput Controller Support (v0.6 - not released yet)
+
+SHADE_IT supports XInput compatible controllers.
+When connected you can also see button presses, thumbstick and trigger values in the **Debug UI** (F1).
+
+<a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_controller.png"></a>
+
+The controller state is packed into a `uniform vec4 iController[2]` for shaders.
+
+#### Uniform `iController` Mapping
+
+| Vector Index | Component | GLSL Access | Type | Description | Range |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`iController[0]`** | `.x` | `.x` | `float` | **Left Stick X** | `[-1.0, 1.0]` |
+| | `.y` | `.y` | `float` | **Left Stick Y** | `[-1.0, 1.0]` |
+| | `.z` | `.z` | `float` | **Right Stick X** | `[-1.0, 1.0]` |
+| | `.w` | `.w` | `float` | **Right Stick Y** | `[-1.0, 1.0]` |
+| **`iController[1]`** | `.x` | `.x` | `float` | **Trigger Left** | `[0.0, 1.0]` |
+| | `.y` | `.y` | `float` | **Trigger Right** | `[0.0, 1.0]` |
+| | `.z` | `.z` | `uint`* | **Packed Buttons** | *See Bitmask Table* |
+| | `.w` | `.w` | `N/A` | *Padding* | *Unused* |
+
+#### Packed Button Bitmask Table (`iController[1].z`)
+
+Use the bitwise AND operator `&` with `(1u << Index)` to check for button states.
+
+| Bit Index | Button / Input | Description |
+| :--- | :--- | :--- |
+| **0** | `BUTTON_A` | |
+| **1** | `BUTTON_B` | |
+| **2** | `BUTTON_X` | |
+| **3** | `BUTTON_Y` | |
+| **4** | `SHOULDER_L` | Left Bumper |
+| **5** | `SHOULDER_R` | Right Bumper |
+| **6** | `TRIGGER_L` | Digital Threshold (Is Pulled) |
+| **7** | `TRIGGER_R` | Digital Threshold (Is Pulled) |
+| **8** | `DPAD_UP` | |
+| **9** | `DPAD_DOWN` | |
+| **10** | `DPAD_LEFT` | |
+| **11** | `DPAD_RIGHT` | |
+| **12** | `STICK_L_CLICK`| Left Thumbstick Button |
+| **13** | `STICK_R_CLICK`| Right Thumbstick Button |
+| **14** | `START` | |
+| **15** | `BACK` | |
+| **16** | `CONNECTED` | `1` if controller is active |
+
+> [!IMPORTANT]
+> `iController[1].z` contains raw bit data. In your shader, you **must** use `floatBitsToUint()` to decode the button states correctly.
+
+#### Shader example for `iController` usage
+
+A basic controller shader example can be found in **examples/shade_it_controller.fs**.
+
+Here is a minimal example of how to access the data:
+
+```glsl
+bool controller_button_down(uint bit_index)
+{
+    uint bits = floatBitsToUint(iController[1].z);
+    return (bits & (1u << bit_index)) != 0u;
+}
+
+void mainImage(out vec4 outColor, in vec2 fragCoord)
+{
+    // Access Analog Sticks
+    vec2 left_stick  = iController[0].xy;
+    vec2 right_stick = iController[0].zw;
+    
+    // Access Triggers
+    float left_trigger  = iController[1].x;
+    float right_trigger = iController[1].y;
+
+    // Access Buttons
+    bool btn_a = controller_button_down(0u);
+    bool btn_b = controller_button_down(1u);
+    bool btn_x = controller_button_down(2u);
+    bool btn_y = controller_button_down(3u);
+    bool dpad_up = controller_button_down(8u);
+
+    // ...
+}
+```
+
 ## Roadmap
 
 For the next release of **SHADE_IT** the following features are planend.
@@ -170,7 +247,7 @@ For the next release of **SHADE_IT** the following features are planend.
 - [x] Fullscreen support for both windowed and borderless
 - [ ] User specified Textures for iChannel0-4 (BMP support for now)
 - [ ] Key Event Uniform support (Add new uniforms in the shaders to retrieve key presses/releases)
-- [ ] Full XInput Controller support (Retrieving logic implemented in v0.5 but not yet optimized and passed to shaders)
+- [x] Full XInput Controller support (Retrieving logic implemented in v0.5 but not yet optimized and passed to shaders)
 - [ ] Optimize uniform uploads (Currently all are set/uploaded regardless if they are required by the shader or not)
 
 ## "nostdlib" Motivation & Purpose
