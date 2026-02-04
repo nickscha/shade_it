@@ -2377,16 +2377,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         /* Pack XInput Controller State into uniform vec4 iController[2];*/
         if (state.controller.connected)
         {
-
-          f32 iControllerData[8];
-          u32 bits = 0;
-
           union
           {
             f32 f;
             u32 u;
           } punner;
 
+          f32 iControllerData[8];
           iControllerData[0] = state.controller.stick_left_x;
           iControllerData[1] = state.controller.stick_left_y;
           iControllerData[2] = state.controller.stick_right_x;
@@ -2394,32 +2391,24 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           iControllerData[4] = state.controller.trigger_left_value;
           iControllerData[5] = state.controller.trigger_right_value;
 
-#define PACK_BTN(field, bit) \
-  if (field)                 \
-  bits |= (1u << (bit))
-
-          /* Pack all 17 button states into one 32-bit integer */
-          PACK_BTN(state.controller.button_a, 0);
-          PACK_BTN(state.controller.button_b, 1);
-          PACK_BTN(state.controller.button_x, 2);
-          PACK_BTN(state.controller.button_y, 3);
-          PACK_BTN(state.controller.shoulder_left, 4);
-          PACK_BTN(state.controller.shoulder_right, 5);
-          PACK_BTN(state.controller.trigger_left, 6);  /* Digital threshold version */
-          PACK_BTN(state.controller.trigger_right, 7); /* Digital threshold version */
-          PACK_BTN(state.controller.dpad_up, 8);
-          PACK_BTN(state.controller.dpad_down, 9);
-          PACK_BTN(state.controller.dpad_left, 10);
-          PACK_BTN(state.controller.dpad_right, 11);
-          PACK_BTN(state.controller.stick_left, 12);  /* Thumbstick click */
-          PACK_BTN(state.controller.stick_right, 13); /* Thumbstick click */
-          PACK_BTN(state.controller.start, 14);
-          PACK_BTN(state.controller.back, 15);
-          PACK_BTN(state.controller.connected, 16);
-
-#undef PACK_BTN
-
-          punner.u = bits;
+          /* Pack button state in u32 bitmask */
+          punner.u = (state.controller.button_a << 0) |
+                     (state.controller.button_b << 1) |
+                     (state.controller.button_x << 2) |
+                     (state.controller.button_y << 3) |
+                     (state.controller.shoulder_left << 4) |
+                     (state.controller.shoulder_right << 5) |
+                     (state.controller.trigger_left << 6) |
+                     (state.controller.trigger_right << 7) |
+                     (state.controller.dpad_up << 8) |
+                     (state.controller.dpad_down << 9) |
+                     (state.controller.dpad_left << 10) |
+                     (state.controller.dpad_right << 11) |
+                     (state.controller.stick_left << 12) |
+                     (state.controller.stick_right << 13) |
+                     (state.controller.start << 14) |
+                     (state.controller.back << 15) |
+                     (state.controller.connected << 16);
 
           iControllerData[6] = punner.f;
           iControllerData[7] = 0.0f; /* padding*/
