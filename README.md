@@ -34,6 +34,7 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 - **Debug UI** - Press **F1** to see performance metrics and GLSL compilation errors/logs
 - **Screen Recording** - Press **F2** to start/stop recording the screen to a raw video file
 - **Fullscreen Support** - Press **F9** for borderless. Press **F11** for classic fullscreen mode
+- **XInput Gamepad Support** - Full XInput compatible gamepad/controller support in shaders
 - **C89 compliant** — portable and legacy-friendly  
 - **nostdlib** — no dependency on the C Standard Library
 - **no memory allocation** — There is **no memory allocation** by the tool itself. It only uses the memory Windows is acquiring for the OpenGL Framebuffers, ...
