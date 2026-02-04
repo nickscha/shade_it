@@ -114,6 +114,13 @@ Beside the Debug UI you can also find here GLSL compilation errors if a shader i
 
 If you encounter a problem/bug please attach this log file to the issue.
 
+### XInput Controller Support
+
+SHADE_IT supports XInput compatible controllers.
+When connected you can also see button presses, thumbstick and trigger values in the **Debug UI** (F1).
+
+<a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_controller.png"></a>
+
 ### Show Debug UI (F1)
 
 Press **F1** to show/hide the debug information, performance metrics and GLSL compilation errors/logs.
