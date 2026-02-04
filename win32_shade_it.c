@@ -874,26 +874,6 @@ SHADE_IT_API i32 win32_process_thread_count(void)
 
 #define KEYS_COUNT 256
 
-/* State Examples:
-  Key Pressed:  state.keys[0x0D].isDown && !state.keys[0x0D].wasDown
-  Key Released: !state.keys[0x0D].isDown && state.keys[0x0D].wasDown
-
-  Example of a Toggle switch (when pressed first toggles on, when pressed second time toggles off):
-
-  static u8 ui_enabled = 0;
-
-  if (state.keys[0x70].is_down && !state.keys[0x70].was_down)
-  {
-    ui_enabled = !ui_enabled;
-  }
-*/
-typedef struct win32_key_state
-{
-  u8 is_down;
-  u8 was_down;
-
-} win32_key_state;
-
 typedef struct win32_controller_state
 {
 
@@ -1070,7 +1050,23 @@ typedef struct win32_shade_it_state
   i32 mouse_dy; /* Relative movement delta for y  */
   i32 mouse_x;  /* Mouse position on screen for x */
   i32 mouse_y;  /* Mouse position on screen for y */
-  win32_key_state keys[KEYS_COUNT];
+
+  /* State Examples:
+    Key Pressed:  state.keys_is_down[0x0D] && !state.keys_was_down[0x0D]
+    Key Released: !state.keys_is_down[0x0D] && state.keys_was_down[0x0D]
+
+    Example of a Toggle switch (when pressed first toggles on, when pressed second time toggles off):
+
+    static u8 ui_enabled = 0;
+
+    if (state.keys_is_down[0x70] && !state.keys_was_down[0x70])
+    {
+      ui_enabled = !ui_enabled;
+    }
+  */
+  u8 keys_is_down[KEYS_COUNT];
+  u8 keys_was_down[KEYS_COUNT];
+
   win32_controller_state controller;
 
   s8 *gl_version;
@@ -1175,9 +1171,8 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
       if (vKey < KEYS_COUNT)
       {
-        win32_key_state *key = &state->keys[vKey];
         /*key->was_down = key->is_down;*/
-        key->is_down = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
+        state->keys_is_down[vKey] = !(keyboard->Flags & RI_KEY_BREAK); /* 1 if pressed, 0 if released */
       }
     }
     else if (raw->header.dwType == RIM_TYPEMOUSE)
@@ -2219,9 +2214,16 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         MSG message = {0};
         u32 i;
 
-        for (i = 0; i < KEYS_COUNT; ++i)
+        u64 *src = (u64 *)state.keys_is_down;
+        u64 *dst = (u64 *)state.keys_was_down;
+
+        /* 256 bytes / 8 bytes (u64) = 32 chunks. */
+        for (i = 0; i < 8; ++i)
         {
-          state.keys[i].was_down = state.keys[i].is_down;
+          *dst++ = *src++;
+          *dst++ = *src++;
+          *dst++ = *src++;
+          *dst++ = *src++;
         }
 
         /* Reset accumulated mouse relative speeds every frame before processing new mouse messages */
@@ -2301,7 +2303,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       /* Full or Borderless (F9,F11)*/
       /******************************/
-      if (state.keys[0x78].is_down && !state.keys[0x78].was_down) /* F9 */
+      if (state.keys_is_down[0x78] && !state.keys_was_down[0x78]) /* F9 */
       {
         borderless_enabled = !borderless_enabled;
 
@@ -2317,7 +2319,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         }
       }
 
-      if (state.keys[0x7A].is_down && !state.keys[0x7A].was_down) /* F11 */
+      if (state.keys_is_down[0x7A] && !state.keys_was_down[0x7A]) /* F11 */
       {
         fullscreen_enabled = !fullscreen_enabled;
 
@@ -2348,7 +2350,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       glClear(GL_COLOR_BUFFER_BIT);
 
-      if (state.keys[0x50].is_down && !state.keys[0x50].was_down) /* P */
+      if (state.keys_is_down[0x50] && !state.keys_was_down[0x50]) /* P */
       {
         shader_paused = !shader_paused;
       }
@@ -2370,7 +2372,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
 
-      if (state.keys[0x70].is_down && !state.keys[0x70].was_down) /* F1 */
+      if (state.keys_is_down[0x70] && !state.keys_was_down[0x70]) /* F1 */
       {
         ui_enabled = !ui_enabled;
       }
@@ -2534,7 +2536,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         static u8 *framebuffer;
         static void *video_file_handle;
 
-        if (state.keys[0x71].is_down && !state.keys[0x71].was_down) /* F2 */
+        if (state.keys_is_down[0x71] && !state.keys_was_down[0x71]) /* F2 */
         {
           screen_recording_enabled = !screen_recording_enabled;
         }
