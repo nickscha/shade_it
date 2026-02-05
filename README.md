@@ -255,7 +255,7 @@ For the next release of **SHADE_IT** the following features are planend.
 ### v0.6 Features (in development)
 - [ ] Win32 ARM release build
 - [x] Fullscreen support for both windowed and borderless (F11 and F9)
-- [x] Reset Shader iTime and iFrame (P)
+- [x] Reset Shader iTime and iFrame (R)
 - [ ] User specified Textures for iChannel0-4 (BMP support for now)
 - [ ] Key Event Uniform support (Add new uniforms in the shaders to retrieve key presses/releases)
 - [x] Full XInput Controller support (Retrieving logic implemented in v0.5 but not yet optimized and passed to shaders)
