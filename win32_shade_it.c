@@ -2472,9 +2472,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         {
           text_append_str(&t, "BORDERLESS ");
         }
-        if (fullscreen_enabled)
+        else if (fullscreen_enabled)
         {
           text_append_str(&t, "FULLSCREEN ");
+        }
+        else
+        {
+          text_append_str(&t, "WINDOWED ");
         }
         if (screen_recording_enabled)
         {
