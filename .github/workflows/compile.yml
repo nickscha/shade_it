@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       - name: Compile ${{ matrix.example }}
-        run: ${{ matrix.cc }} -s -O2 -mwindows -march=native -mtune=native -std=c89 -pedantic -nodefaultlibs -nostdlib -mno-stack-arg-probe -Xlinker /STACK:0x100000,0x100000 -Xlinker /ENTRY:mainCRTStartup -fno-builtin -ffreestanding -fno-asynchronous-unwind-tables -fuse-ld=lld -Wall -Wextra -Werror -Wvla -Wconversion -Wdouble-promotion -Wmissing-field-initializers -Wuninitialized -Winit-self -Wunused -Wunused-macros -Wunused-local-typedefs ${{ matrix.example }}.c win32_shade_it.res -o ${{ matrix.example }}.exe -lkernel32 -luser32 -lgdi32 -lopengl32
+        run: ${{ matrix.cc }} -s -O2 -mwindows -std=c89 -pedantic -nodefaultlibs -nostdlib -mno-stack-arg-probe -Xlinker /STACK:0x100000,0x100000 -Xlinker /ENTRY:mainCRTStartup -fno-builtin -ffreestanding -fno-asynchronous-unwind-tables -fuse-ld=lld -Wall -Wextra -Werror -Wvla -Wconversion -Wdouble-promotion -Wmissing-field-initializers -Wuninitialized -Winit-self -Wunused -Wunused-macros -Wunused-local-typedefs ${{ matrix.example }}.c win32_shade_it.res -o ${{ matrix.example }}.exe -lkernel32 -luser32 -lgdi32 -lopengl32
       - name: Upload ${{ matrix.example }} Artifact
         uses: actions/upload-artifact@v4
         with:
