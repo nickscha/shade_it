@@ -115,6 +115,7 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 
 #define CS_OWNDC 0x0020
 
+#define HWND_TOPMOST ((void *)-1)
 #define HWND_TOP ((void *)0)
 
 #define WS_CLIPSIBLINGS 0x04000000
@@ -1662,6 +1663,9 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
       window_instance,
       state /* Pass pointer to user data to the window callback */
   );
+
+  /* Modal window */
+  SetWindowPos(state->window_handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
   state->device_context = GetDC(state->window_handle);
 
