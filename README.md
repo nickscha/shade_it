@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
     <img src="https://img.shields.io/badge/Windows%20x64-green?style=flat-square" alt="Windows x64">
   </a>
   <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it_arm.exe">
-    <img src="https://img.shields.io/badge/Windows%20x64-green?style=flat-square" alt="Windows ARM">
+    <img src="https://img.shields.io/badge/Windows%20ARM-green?style=flat-square" alt="Windows ARM">
   </a>
   <a href="https://github.com/nickscha/shade_it/releases">
     <img src="https://img.shields.io/github/v/release/nickscha/shade_it?style=flat-square&color=blue" alt="Latest Release">
