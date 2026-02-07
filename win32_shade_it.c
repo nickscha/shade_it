@@ -1099,14 +1099,16 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     {
       RAWINPUTDEVICE rid[2] = {0};
 
+      (void)RIDEV_INPUTSINK; /* Receive input even when not focused */
+
       rid[0].usUsagePage = 0x01;
-      rid[0].usUsage = 0x06;            /* Keyboard */
-      rid[0].dwFlags = RIDEV_INPUTSINK; /* Receive input even when not focused */
+      rid[0].usUsage = 0x06; /* Keyboard */
+      rid[0].dwFlags = 0;    /* Receive input only when focused */
       rid[0].hwndTarget = window;
 
       rid[1].usUsagePage = 0x01;
       rid[1].usUsage = 0x02; /* Mouse */
-      rid[1].dwFlags = RIDEV_INPUTSINK;
+      rid[1].dwFlags = 0;    /* Receive input only when focused */
       rid[1].hwndTarget = window;
 
       if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0])))
