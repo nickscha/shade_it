@@ -145,11 +145,11 @@ ffmpeg -f rawvideo -pix_fmt rgb24 -s 800x600 -r 60 -i shade_it_capture_800x600_6
 
 Note that the **size** (here 800x600) and the **FPS** (here 60) **have to match** with your recorded data.
 
-### Borderless Mode (F9) (v0.6 - not released yet)
+### Borderless Mode (F9)
 
 You can enter/leave the borderless window mode by pressing **F9**.
 
-### Fullscreen Mode (F11) (v0.6 - not released yet)
+### Fullscreen Mode (F11)
 
 You can enter/leave the "classic" fullscreen window mode by pressing **F11**.
 
@@ -157,11 +157,11 @@ You can enter/leave the "classic" fullscreen window mode by pressing **F11**.
 
 If you want to freeze/pause the current shader display you can press **P**.
 
-### Reset Time (R) (v0.6 - not released yet)
+### Reset Time (R)
 
 If you want to reset the current elapsed time (iTime) and processed frames (iFrame) you can press **R**.
 
-### XInput Controller Support (v0.6 - not released yet)
+### XInput Controller Support
 
 SHADE_IT supports XInput compatible controllers.
 When connected you can also see button presses, thumbstick and trigger values in the **Debug UI** (F1).
@@ -252,14 +252,11 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
 
 For the next release of **SHADE_IT** the following features are planend.
 
-### v0.6 Features (in development)
+### v0.6 Features
 - [x] Win32 ARM release build
 - [x] Fullscreen support for both windowed and borderless (F11 and F9)
 - [x] Reset Shader iTime and iFrame (R)
-- [ ] User specified Textures for iChannel0-4 (BMP support for now)
-- [ ] Key Event Uniform support (Add new uniforms in the shaders to retrieve key presses/releases)
 - [x] Full XInput Controller support (Retrieving logic implemented in v0.5 but not yet optimized and passed to shaders)
-- [ ] Optimize uniform uploads (Currently all are set/uploaded regardless if they are required by the shader or not)
 
 ## "nostdlib" Motivation & Purpose
 
