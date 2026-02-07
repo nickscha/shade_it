@@ -1,4 +1,4 @@
-/* win32_shade_it.c - v0.6 - public domain data structures - nickscha 2026
+/* win32_shade_it.c - v0.7 - public domain data structures - nickscha 2026
 
 A C89 standard compliant, single file, nostdlib (no C Standard Library) OpenGL Live Shader Coding Playground (SHADE_IT).
 
@@ -2014,7 +2014,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   u32 glyph_vbo;
 
   state.running = 1;
-  state.window_title = "shade_it v0.6 (F1=Debug UI, F2=Screen Recording, R=Reset, P=Pause, F9=Borderless, F11=Fullscreen)";
+  state.window_title = "shade_it v0.7 (F1=Debug UI, F2=Screen Recording, R=Reset, P=Pause, F9=Borderless, F11=Fullscreen)";
   state.window_width = 800;
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
