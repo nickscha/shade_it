@@ -11,8 +11,11 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 
 ## Download the executable
 <p align="center">
-  <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it.exe">
+  <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it_x64.exe">
     <img src="https://img.shields.io/badge/Windows%20x64-green?style=flat-square" alt="Windows x64">
+  </a>
+  <a href="https://github.com/nickscha/shade_it/releases/latest/download/win32_shade_it_arm.exe">
+    <img src="https://img.shields.io/badge/Windows%20x64-green?style=flat-square" alt="Windows ARM">
   </a>
   <a href="https://github.com/nickscha/shade_it/releases">
     <img src="https://img.shields.io/github/v/release/nickscha/shade_it?style=flat-square&color=blue" alt="Latest Release">
@@ -44,7 +47,7 @@ https://github.com/user-attachments/assets/ac3f5131-83a1-4043-a2ae-b103240e10bc
 
 ### Download Windows Executable (Prebuilt)
 
-Download the latest Windows executable from the **Latest Release**:
+Download the latest Windows executable for **X64** or **ARM** from the **Latest Release**:
 - https://github.com/nickscha/shade_it/releases/latest
 
 ### Building From Source
@@ -62,12 +65,15 @@ You can now run the `win32_shade_it.exe` program.
 
 ### Running the program
 
+> [!IMPORTANT]
+> If you have donwloaded the release executeable depending on your platform use `win32_shade_it_x64.exe` or `win32_shade_it_arm.exe`
+
 ```bat
 REM This expects a file named "shade_it.fs" to be present
-win32_shade_it.exe
+win32_shade_it_x64.exe
 
 REM Alternativly you can define your own fragment shader file
-win32_shade_it.exe examples\shade_it_star_nest.fs
+win32_shade_it_x64.exe examples\shade_it_star_nest.fs
 ```
 
 While **running** you can **edit** and save the fragment shader source file and shade_it will immediatly **hot-reload** the code.
