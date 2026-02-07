@@ -9,17 +9,11 @@ on:
         type: string
 
 jobs:
-  release:
-    name: Create GitHub Release
+  build_x64:
+    name: Build x64
     runs-on: windows-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
       - name: Compile win32_shade_it
         shell: bash
@@ -36,8 +30,63 @@ jobs:
             -Wdouble-promotion -Wmissing-field-initializers \
             -Wuninitialized -Winit-self -Wunused \
             -Wunused-macros -Wunused-local-typedefs \
-            win32_shade_it.c win32_shade_it.res -o win32_shade_it.exe \
+            win32_shade_it.c win32_shade_it.res -o win32_shade_it_x64.exe \
             -lkernel32 -luser32 -lgdi32 -lopengl32
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-x64
+          path: win32_shade_it_x64.exe
+
+  build_arm:
+    name: Build ARM
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile win32_shade_it
+        shell: bash
+        run: |
+          gcc -s -O2 -mwindows \
+            -std=c89 -pedantic -nodefaultlibs -nostdlib \
+            -mno-stack-arg-probe \
+            -Xlinker /STACK:0x100000,0x100000 \
+            -Xlinker /ENTRY:mainCRTStartup \
+            -fno-builtin -ffreestanding \
+            -fno-asynchronous-unwind-tables \
+            -fuse-ld=lld \
+            -Wall -Wextra -Werror -Wvla -Wconversion \
+            -Wdouble-promotion -Wmissing-field-initializers \
+            -Wuninitialized -Winit-self -Wunused \
+            -Wunused-macros -Wunused-local-typedefs \
+            win32_shade_it.c win32_shade_it.res -o win32_shade_it_arm.exe \
+            -lkernel32 -luser32 -lgdi32 -lopengl32
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-arm
+          path: win32_shade_it_arm.exe
+
+  release:
+    name: Create GitHub Release
+    needs: [build_x64, build_arm]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+          merge-multiple: true
 
       - name: Get latest release tag
         id: get_tag
@@ -64,14 +113,11 @@ jobs:
           echo "$commit_log" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          release_name: "${{ github.event.inputs.version }}: win32_shade_it.c release"
+          name: "${{ github.event.inputs.version }}: win32_shade_it.c release"
           body: |
             # ${{ github.event.inputs.version }}: shade_it - OpenGL Shader Playground Release.
 
@@ -87,8 +133,8 @@ jobs:
 
 
             ## Downloads
-            - **win32_shade_it.exe** (Windows x64, OpenGL 3.3)
-
+            - **win32_shade_it_x64.exe** (Windows x64, OpenGL 3.3)
+            - **win32_shade_it_arm.exe** (Windows ARM, OpenGL 3.3)
             ---
 
             ### What's Included
@@ -97,15 +143,6 @@ jobs:
 
             **Get started by downloading the source code today!**
 
-          draft: false
-          prerelease: false
-
-      - name: Upload executable to release
-        uses: actions/upload-release-asset@v1
+          files: ./dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: win32_shade_it.exe
-          asset_name: win32_shade_it.exe
-          asset_content_type: application/octet-stream
