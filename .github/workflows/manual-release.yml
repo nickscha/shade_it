@@ -22,7 +22,6 @@ jobs:
             -std=c89 -pedantic -nodefaultlibs -nostdlib \
             -mno-stack-arg-probe \
             -Xlinker /STACK:0x100000,0x100000 \
-            -Xlinker /ENTRY:mainCRTStartup \
             -fno-builtin -ffreestanding \
             -fno-asynchronous-unwind-tables \
             -fuse-ld=lld \
@@ -52,7 +51,6 @@ jobs:
             -std=c89 -pedantic -nodefaultlibs -nostdlib \
             -mno-stack-arg-probe \
             -Xlinker /STACK:0x100000,0x100000 \
-            -Xlinker /ENTRY:mainCRTStartup \
             -fno-builtin -ffreestanding \
             -fno-asynchronous-unwind-tables \
             -fuse-ld=lld \
