@@ -263,6 +263,7 @@ For the next release of **SHADE_IT** the following features are planend.
 - [x] win32 entry name change as suggested by @skeeto
 - [ ] Optimize stack usage with arena as suggested by @skeeto
 - [ ] Improved OpenGL functions loader. Some GPU Drivers can return from wglGetProcAddress: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
+- [ ] Use Uniform Buffer Objects (UBO) for better performance rather than single uniforms if the GPU driver allows it
 
 ### v0.6 Features
 - [x] Win32 ARM release build
