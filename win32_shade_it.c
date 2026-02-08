@@ -1042,6 +1042,13 @@ typedef struct win32_shade_it_state
   u8 window_minimized;
   u8 window_size_changed;
 
+  u8 shader_paused;
+  u8 ui_enabled;
+  u8 fullscreen_enabled;
+  u8 borderless_enabled;
+  u8 screen_recording_enabled;
+  u8 screen_recording_initialized;
+
   u32 target_frames_per_second;
 
   s8 *window_title;
@@ -2152,13 +2159,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
     i64 time_start_fps_cap;
     i64 time_last;
 
-    u8 shader_paused = 0;
-    u8 ui_enabled = 0;
-    u8 fullscreen_enabled = 0;
-    u8 borderless_enabled = 0;
-    u8 screen_recording_enabled = 0;
-    u8 screen_recording_initialized = 0;
-
     i32 thread_count = win32_process_thread_count();
 
     FILETIME fs_last = win32_file_mod_time(fragment_shader_file_name);
@@ -2320,32 +2320,32 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       if (state.keys_is_down[0x78] && !state.keys_was_down[0x78]) /* F9 */
       {
-        borderless_enabled = !borderless_enabled;
+        state.borderless_enabled = !state.borderless_enabled;
 
-        if (borderless_enabled && !fullscreen_enabled)
+        if (state.borderless_enabled && !state.fullscreen_enabled)
         {
           win32_window_enter_borderless(&state);
         }
         else
         {
-          fullscreen_enabled = 0;
-          borderless_enabled = 0;
+          state.fullscreen_enabled = 0;
+          state.borderless_enabled = 0;
           win32_window_enter_windowed(&state);
         }
       }
 
       if (state.keys_is_down[0x7A] && !state.keys_was_down[0x7A]) /* F11 */
       {
-        fullscreen_enabled = !fullscreen_enabled;
+        state.fullscreen_enabled = !state.fullscreen_enabled;
 
-        if (fullscreen_enabled && !borderless_enabled)
+        if (state.fullscreen_enabled && !state.borderless_enabled)
         {
           win32_window_enter_fullscreen(&state);
         }
         else
         {
-          fullscreen_enabled = 0;
-          borderless_enabled = 0;
+          state.fullscreen_enabled = 0;
+          state.borderless_enabled = 0;
           win32_window_enter_windowed(&state);
         }
       }
@@ -2353,7 +2353,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       /* Rendering                  */
       /******************************/
-      if (state.window_size_changed && !screen_recording_enabled)
+      if (state.window_size_changed && !state.screen_recording_enabled)
       {
         state.window_width = state.window_width_pending;
         state.window_height = state.window_height_pending;
@@ -2370,7 +2370,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       if (state.keys_is_down[0x50] && !state.keys_was_down[0x50]) /* P */
       {
-        shader_paused = !shader_paused;
+        state.shader_paused = !state.shader_paused;
       }
 
       /******************************/
@@ -2385,7 +2385,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       glUseProgram(main_shader.header.program);
 
-      if (!shader_paused)
+      if (!state.shader_paused)
       {
         glUniform3f(main_shader.loc_iResolution, (f32)state.window_width, (f32)state.window_height, 1.0f);
         glUniform1f(main_shader.loc_iTime, (f32)state.iTime);
@@ -2444,13 +2444,13 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       if (state.keys_is_down[0x70] && !state.keys_was_down[0x70]) /* F1 */
       {
-        ui_enabled = !ui_enabled;
+        state.ui_enabled = !state.ui_enabled;
       }
 
       /******************************/
       /* UI Rendering (F1 pressed)  */
       /******************************/
-      if (ui_enabled)
+      if (state.ui_enabled)
       {
         s8 buffer[1024];
         text t = {0};
@@ -2467,15 +2467,15 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         t.buffer = buffer;
 
         text_append_str(&t, "STATE      : ");
-        if (shader_paused)
+        if (state.shader_paused)
         {
           text_append_str(&t, "PAUSED ");
         }
-        if (borderless_enabled)
+        if (state.borderless_enabled)
         {
           text_append_str(&t, "BORDERLESS ");
         }
-        else if (fullscreen_enabled)
+        else if (state.fullscreen_enabled)
         {
           text_append_str(&t, "FULLSCREEN ");
         }
@@ -2483,7 +2483,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         {
           text_append_str(&t, "WINDOWED ");
         }
-        if (screen_recording_enabled)
+        if (state.screen_recording_enabled)
         {
           text_append_str(&t, "RECORDING ");
         }
@@ -2612,15 +2612,15 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         if (state.keys_is_down[0x71] && !state.keys_was_down[0x71]) /* F2 */
         {
-          screen_recording_enabled = !screen_recording_enabled;
+          state.screen_recording_enabled = !state.screen_recording_enabled;
         }
 
-        if (screen_recording_enabled)
+        if (state.screen_recording_enabled)
         {
 
           u32 written = 0;
 
-          if (!screen_recording_initialized)
+          if (!state.screen_recording_initialized)
           {
             s8 buffer[128];
             text t = {0};
@@ -2645,7 +2645,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
-            screen_recording_initialized = 1;
+            state.screen_recording_initialized = 1;
           }
           glReadPixels(0, 0, (i32)state.window_width, (i32)state.window_height, GL_RGB, GL_UNSIGNED_BYTE, framebuffer);
 
@@ -2658,11 +2658,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           glBindVertexArray(main_vao);
           glDrawArrays(GL_TRIANGLES, 0, 3);
         }
-        else if (screen_recording_initialized)
+        else if (state.screen_recording_initialized)
         {
           VirtualFree(framebuffer, 0, MEM_RELEASE);
           CloseHandle(video_file_handle);
-          screen_recording_initialized = 0;
+          state.screen_recording_initialized = 0;
         }
       }
 
