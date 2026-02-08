@@ -110,6 +110,11 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define WM_QUIT 0x0012
 #define WM_SIZE 0x0005
 #define WM_INPUT 0x00FF
+#define WM_DEVICECHANGE 0x0219
+
+#define DBT_DEVICEARRIVAL 0x8000
+#define DBT_DEVICEREMOVECOMPLETE 0x8004
+#define DBT_DEVNODES_CHANGED 0x0007
 
 #define SIZE_MINIMIZED 1
 
@@ -911,7 +916,9 @@ typedef struct win32_controller_state
   f32 trigger_left_value;
   f32 trigger_right_value;
 
+  u8 id; /* The XInput id associated with this controller */
   u8 connected;
+  u8 check_needed; /* If a device is plugged in or disconnected we should check XInput controller state again */
 
 } win32_controller_state;
 
@@ -1197,6 +1204,16 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
       state->mouse_dx += dx;
       state->mouse_dy += dy;
+    }
+  }
+  break;
+  case WM_DEVICECHANGE:
+  {
+    /* Check if a device notification arrived in order to find out when to requery XInput controller states */
+    /* DBT_DEVNODES_CHANGED is the most reliable for USB plugging/unplugging */
+    if (wParam == DBT_DEVNODES_CHANGED || wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE)
+    {
+      state->controller.check_needed = 1;
     }
   }
   break;
@@ -2026,6 +2043,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
   state.window_height = 600;
   state.window_clear_color_r = 0.5f;
   state.target_frames_per_second = 60; /* 60 FPS, 0 = unlimited */
+  state.controller.check_needed = 1;   /* By default we have to query first XInput state */
 
   /******************************/
   /* Set Process Priorities     */
@@ -2264,26 +2282,39 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       /******************************/
       if (XInputGetState)
       {
-        u32 i = 0;
 
-        /* TODO(nickscha):
-           Getting the state for each controller every frame is expensive.
-           Better to query from time to time the connected controller and then
-           only update this controller per frame.
+        /* If we recieve a WM_DEVICECHANGE message (hardware connected or disconnected to machine)
+         * we need to check again the XInput Controller state.
+         */
+        if (state.controller.check_needed)
+        {
+          u8 i = 0;
 
-           Best would be to listen to HID notifications (event when something is unplugged or plugged in to the machine).
-           Only then we would need query the xinput state.
-        */
-        (void)XINPUT_USER_MAX_COUNT;
+          XINPUT_STATE xinput_state = {0};
 
-        for (i = 0; i < 1; ++i)
+          state.controller.connected = 0;
+
+          for (i = 0; i < XINPUT_USER_MAX_COUNT; ++i)
+          {
+            u32 result = XInputGetState(i, &xinput_state);
+
+            if (result == 0)
+            {
+              state.controller.id = i;
+              state.controller.connected = 1;
+              break;
+            }
+          }
+
+          state.controller.check_needed = 0;
+        }
+
+        if (state.controller.connected)
         {
           XINPUT_STATE xinput_state = {0};
-          u32 result = XInputGetState(i, &xinput_state);
+          u32 result = XInputGetState(state.controller.id, &xinput_state);
 
-          state.controller.connected = result == 0;
-
-          if (state.controller.connected)
+          if (result == 0)
           {
             XINPUT_GAMEPAD *gp = &xinput_state.Gamepad;
             state.controller.button_a = (gp->wButtons & XINPUT_GAMEPAD_A) ? 1 : 0;
@@ -2308,9 +2339,11 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
             state.controller.stick_left_y = xinput_process_thumbstick(gp->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
             state.controller.stick_right_x = xinput_process_thumbstick(gp->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
             state.controller.stick_right_y = xinput_process_thumbstick(gp->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
-
-            /* TODO(nickscha): For now we support only one controller connected */
-            break;
+          }
+          else
+          {
+            state.controller.check_needed = 1;
+            state.controller.connected = 0;
           }
         }
       }

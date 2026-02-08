@@ -258,6 +258,10 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
 
 For the next release of **SHADE_IT** the following features are planend.
 
+### v0.7 Features (not released yet)
+- [x] Efficient XInput state retrieval using HID notifications (only check connection state when a device is connected or disconnected from the machine). This improves performance since XInputGetState for disconnected or invalid IDs can cause full BUS scan and is quiet slow. With this change we only query XInputState if a device is connected/disconnected.
+- [x] win32 entry name change as suggested by @skeeto
+
 ### v0.6 Features
 - [x] Win32 ARM release build
 - [x] Fullscreen support for both windowed and borderless (F11 and F9)
