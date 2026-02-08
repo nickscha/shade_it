@@ -5,7 +5,7 @@ set PLATFORM_NAME=win32_shade_it
 set ICON_DATA=win32_shade_it.res
 
 set DEF_COMPILER_FLAGS=-mwindows -march=native -mtune=native ^
--std=c89 -pedantic -nodefaultlibs -nostdlib -mno-stack-arg-probe -Xlinker /STACK:0x100000,0x100000 -Xlinker /ENTRY:mainCRTStartup ^
+-std=c89 -pedantic -nodefaultlibs -nostdlib -mno-stack-arg-probe -Xlinker /STACK:0x100000,0x100000 ^
 -fno-builtin -ffreestanding -fno-asynchronous-unwind-tables -fuse-ld=lld -fno-math-errno -fno-trapping-math ^
 -Wall -Wextra -Werror -Wvla -Wconversion -Wdouble-promotion -Wsign-conversion ^
 -Wmissing-field-initializers -Wuninitialized -Winit-self -Wunused -Wunused-macros -Wunused-local-typedefs

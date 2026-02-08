@@ -2737,7 +2737,7 @@ __attribute((externally_visible))
 #ifdef __i686__
 __attribute((force_align_arg_pointer))
 #endif
-i32 mainCRTStartup(void)
+i32 WinMainCRTStartup(void)
 {
   u8 *cmdline = (u8 *)GetCommandLineA();
   u8 *argv[8];
