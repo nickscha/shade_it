@@ -2270,6 +2270,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
            Getting the state for each controller every frame is expensive.
            Better to query from time to time the connected controller and then
            only update this controller per frame.
+
+           Best would be to listen to HID notifications (event when something is unplugged or plugged in to the machine).
+           Only then we would need query the xinput state.
         */
         (void)XINPUT_USER_MAX_COUNT;
 
