@@ -2734,9 +2734,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 #elif __GNUC__
 __attribute((externally_visible))
 #endif
-#ifdef __i686__
-__attribute((force_align_arg_pointer))
-#endif
 i32 WinMainCRTStartup(void)
 {
   u8 *cmdline = (u8 *)GetCommandLineA();
