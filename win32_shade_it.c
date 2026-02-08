@@ -795,7 +795,25 @@ SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_high_priority(void)
 
 SHADE_IT_API SHADE_IT_INLINE u8 win32_enable_dpi_awareness(void)
 {
-  void *shcore = LoadLibraryA("Shcore.dll");
+  /* Try Windows 10 / 11 (Per-Monitor V2) */
+  void *user32 = GetModuleHandleA("user32.dll");
+
+  void *shcore;
+
+  if (user32)
+  {
+    typedef i32(__stdcall * SetProcessDpiAwarenessContextProc)(void *);
+    SetProcessDpiAwarenessContextProc setProcessDpiAwarenessContext;
+
+    *(void **)(&setProcessDpiAwarenessContext) = GetProcAddress(user32, "SetProcessDpiAwarenessContext");
+
+    if (setProcessDpiAwarenessContext && setProcessDpiAwarenessContext((void *)-4)) /* DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2  */
+    {
+      return 1;
+    }
+  }
+
+  shcore = LoadLibraryA("Shcore.dll");
 
   if (shcore)
   {
@@ -1711,7 +1729,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
     return 0;
   }
 
-  /* OpenGL functions that are not part of the opengl32 legacy 1.1 lib 
+  /* OpenGL functions that are not part of the opengl32 legacy 1.1 lib
    * These are queried directly from the GPU driver.
    *
    * TODO(nickscha): Add error handling and robust checks
