@@ -1711,7 +1711,12 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
     return 0;
   }
 
-  /* OpenGL functions that are not part of the opengl32 lib */
+  /* OpenGL functions that are not part of the opengl32 legacy 1.1 lib 
+   * These are queried directly from the GPU driver.
+   *
+   * TODO(nickscha): Add error handling and robust checks
+   * On some GPU drivers the result could be: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
+   */
   glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
   glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
   glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
