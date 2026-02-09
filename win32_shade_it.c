@@ -2437,7 +2437,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       }
 
       /******************************/
-      /* Rendering                  */
+      /* Handle Window Size changes */
       /******************************/
       if (state.window_size_changed && !state.screen_recording_enabled)
       {
@@ -2469,6 +2469,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         state.iFrame = 0;
       }
 
+      /******************************/
+      /* Main Shader Rendering      */
+      /******************************/
       glUseProgram(main_shader.header.program);
 
       if (!state.shader_paused)
@@ -2528,14 +2531,14 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       glBindVertexArray(main_vao);
       glDrawArrays(GL_TRIANGLES, 0, 3);
 
+      /******************************/
+      /* UI Rendering (F1 pressed)  */
+      /******************************/
       if (state.keys_is_down[0x70] && !state.keys_was_down[0x70]) /* F1 */
       {
         state.ui_enabled = !state.ui_enabled;
       }
 
-      /******************************/
-      /* UI Rendering (F1 pressed)  */
-      /******************************/
       if (state.ui_enabled)
       {
         s8 buffer[1024];
