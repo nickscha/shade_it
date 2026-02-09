@@ -1561,6 +1561,8 @@ SHADE_IT_API u32 text_to_glyphs(
     s8 c = *text++;
     i32 glyph_index = font_char_to_glyph_index(c);
     u8 blink = 0;
+    u8 flip_vertical = 0;
+    u8 flip_horizontal = 0;
 
     if (c == '\n')
     {
@@ -1583,7 +1585,7 @@ SHADE_IT_API u32 text_to_glyphs(
 
     out_glyphs[count].x = (u16)x;
     out_glyphs[count].y = (u16)y;
-    out_glyphs[count].packed_glyph_state = glyph_index | (blink << 8);
+    out_glyphs[count].packed_glyph_state = glyph_index | (blink << 8) | (flip_vertical << 9) | (flip_horizontal << 10);
     out_glyphs[count++].packed_color = default_color;
 
     x += advance_x;
@@ -2026,7 +2028,6 @@ SHADE_IT_API void opengl_shader_load_shader_main(shader_main *shader, s8 *shader
 
 SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
 {
-
   static s8 *shader_font_code_vertex =
       "#version 330 core\n"
       "layout(location=0)in vec2 p;"
@@ -2038,14 +2039,16 @@ SHADE_IT_API void opengl_shader_load_shader_font(shader_font *shader)
       "out vec3 vC;"
       "flat out uint b;"
       "void main(){"
-      "float i=float(g.z&255u),C=t.x/t.z;"
+      "float i=g.z&255u,C=t.x/t.z;"
       "b=(g.z>>8)&1u;"
-      "vec2 P=vec2(g.xy)+p*t.zw*s;"
-      "vec2 n=P/r.xy*2.-1.;"
-      "gl_Position=vec4(n.x,-n.y,0,1);"
+      "float v=(g.z>>9)&1u,h=(g.z>>10)&1u;"
+      "vec2 Q=vec2(p.x*(1.-2.*h)+h,p.y*(1.-2.*v)+v);"
+      "vec2 p2=vec2(g.xy)+Q*t.zw*s;"
+      "vec2 N=p2/r.xy*2.-1.;"
+      "gl_Position=vec4(N.x,-N.y,0,1);"
       "vUV=vec2((mod(i,C)+p.x)*t.z/t.x,(floor(i/C)+p.y)*t.w/t.y);"
-      "uint k=g.w;"
-      "vC=vec3((k>>11&31u)/31.,(k>>5&63u)/63.,(k&31u)/31.);"
+      "uint K=g.w;"
+      "vC=vec3((K>>11&31u)/31.,(K>>5&63u)/63.,(K&31u)/31.);"
       "}";
 
   static s8 *shader_font_code_fragment =
