@@ -1382,6 +1382,7 @@ SHADE_IT_API i32 font_char_to_glyph_index(s8 c)
   if (c == '-') return 40;
   if (c == '.') return 41;
   if (c == '<') return 42;
+  if (c == '>') return 42;
 
   return -1;
 }
@@ -1557,18 +1558,22 @@ SHADE_IT_API u32 text_to_glyphs(
   f32 advance_x = (f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale;
   f32 advance_y = ((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT;
 
+  u8 blink = 0;
+  u8 flip_vertical = 0;
+  u8 flip_horizontal = 0;
+
   while (*text && count < max_glyphs)
   {
     s8 c = *text++;
     i32 glyph_index = font_char_to_glyph_index(c);
-    u8 blink = 0;
-    u8 flip_vertical = 0;
-    u8 flip_horizontal = 0;
 
     if (c == '\n')
     {
       x = start_x;
       y += advance_y;
+      blink = 0;
+      flip_vertical = 0;
+      flip_horizontal = 0;
       continue;
     }
 
@@ -1586,7 +1591,7 @@ SHADE_IT_API u32 text_to_glyphs(
 
     out_glyphs[count].x = (u16)x;
     out_glyphs[count].y = (u16)y;
-    out_glyphs[count].packed_glyph_state = glyph_index | (blink << 8) | (flip_vertical << 9) | (flip_horizontal << 10);
+    out_glyphs[count].packed_glyph_state = glyph_index | ((glyph_index == 42 ? 1 : blink) << 8) | (flip_vertical << 9) | ((c == '>' ? 1 : flip_horizontal) << 10);
     out_glyphs[count++].packed_color = default_color;
 
     x += advance_x;
@@ -2611,9 +2616,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         }
         text_append_str(&t, "\nFPS        : ");
         text_append_f64(&t, state.iFrameRate, 2);
-        text_append_str(&t, "\nFPS TARGET : ");
+        text_append_str(&t, "\nFPS TARGET : <");
         text_append_f64(&t, state.target_frames_per_second, 2);
-        text_append_str(&t, "\nFPS RAW    : ");
+        text_append_str(&t, ">\nFPS RAW    : ");
         text_append_f64(&t, state.iFrameRateRaw, 2);
         text_append_str(&t, "\nFRAME      : ");
         text_append_i32(&t, state.iFrame);
