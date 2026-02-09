@@ -1626,6 +1626,41 @@ typedef struct shader_recording
 
 static s8 shader_info_log[1024];
 
+static u32 opengl_failed_function_load_count = 0;
+
+SHADE_IT_API PROC opengl_load_function(s8 *name)
+{
+  PROC gl_function = wglGetProcAddress(name);
+
+  /* Some GPU drivers do not return a valid null pointer if requested OpenGL function is not available */
+  if (gl_function == (PROC)0 || gl_function == (PROC)0x1 || gl_function == (PROC)0x2 || gl_function == (PROC)0x3 || gl_function == (PROC)-1)
+  {
+    /* Try falling back to opengl32 */
+    static void *gl_lib = 0;
+    void *object_ptr;
+
+    if (!gl_lib)
+    {
+      gl_lib = GetModuleHandleA("opengl32.dll");
+    }
+
+    object_ptr = (void *)GetProcAddress(gl_lib, name);
+
+    gl_function = *(PROC *)&object_ptr;
+  }
+
+  if (gl_function == (PROC)0)
+  {
+    win32_print("[opengl] \"");
+    win32_print(name);
+    win32_print("\" not found!\n");
+
+    opengl_failed_function_load_count++;
+  }
+
+  return gl_function;
+}
+
 SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *state)
 {
   void *window_instance = GetModuleHandleA(0);
@@ -1719,54 +1754,49 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-function-type"
   /* Core WGL functions */
-  wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-  wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-  wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+  wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)opengl_load_function("wglChoosePixelFormatARB");
+  wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)opengl_load_function("wglCreateContextAttribsARB");
+  wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)opengl_load_function("wglSwapIntervalEXT");
 
-  if (!wglChoosePixelFormatARB || !wglCreateContextAttribsARB)
-  {
-    win32_print("[opengl] required WGL extensions 'wglChoosePixelFormatARB', 'wglCreateContextAttribsARB' missing!\n");
-    return 0;
-  }
-
-  /* OpenGL functions that are not part of the opengl32 legacy 1.1 lib
-   * These are queried directly from the GPU driver.
-   *
-   * TODO(nickscha): Add error handling and robust checks
-   * On some GPU drivers the result could be: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
-   */
-  glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
-  glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
-  glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
-  glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
-  glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
-  glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
-  glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
-  glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
-  glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
-  glGetProgramiv = (PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv");
-  glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog");
-  glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
-  glDrawArrays = (PFNGLDRAWARRAYSPROC)wglGetProcAddress("glDrawArrays");
-  glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
-  glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)wglGetProcAddress("glGenVertexArrays");
-  glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
-  glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
-  glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
-  glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
-  glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
-  glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
-  glUniform4fv = (PFNGLUNIFORM4FVPROC)wglGetProcAddress("glUniform4fv");
-  glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
-  glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers");
-  glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
-  glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
-  glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glEnableVertexAttribArray");
-  glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
-  glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)wglGetProcAddress("glVertexAttribDivisor");
-  glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCED)wglGetProcAddress("glDrawArraysInstanced");
+  /* OpenGL 1.1+ Functions that are part of the GPU driver rather than opengl32.dll */
+  glCreateShader = (PFNGLCREATESHADERPROC)opengl_load_function("glCreateShader");
+  glCreateProgram = (PFNGLCREATEPROGRAMPROC)opengl_load_function("glCreateProgram");
+  glDeleteProgram = (PFNGLDELETEPROGRAMPROC)opengl_load_function("glDeleteProgram");
+  glAttachShader = (PFNGLATTACHSHADERPROC)opengl_load_function("glAttachShader");
+  glShaderSource = (PFNGLSHADERSOURCEPROC)opengl_load_function("glShaderSource");
+  glCompileShader = (PFNGLCOMPILESHADERPROC)opengl_load_function("glCompileShader");
+  glGetShaderiv = (PFNGLGETSHADERIVPROC)opengl_load_function("glGetShaderiv");
+  glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)opengl_load_function("glGetShaderInfoLog");
+  glLinkProgram = (PFNGLLINKPROGRAMPROC)opengl_load_function("glLinkProgram");
+  glGetProgramiv = (PFNGLGETPROGRAMIVPROC)opengl_load_function("glGetProgramiv");
+  glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)opengl_load_function("glGetProgramInfoLog");
+  glDeleteShader = (PFNGLDELETESHADERPROC)opengl_load_function("glDeleteShader");
+  glDrawArrays = (PFNGLDRAWARRAYSPROC)opengl_load_function("glDrawArrays");
+  glUseProgram = (PFNGLUSEPROGRAMPROC)opengl_load_function("glUseProgram");
+  glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)opengl_load_function("glGenVertexArrays");
+  glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)opengl_load_function("glBindVertexArray");
+  glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)opengl_load_function("glGetUniformLocation");
+  glUniform1f = (PFNGLUNIFORM1FPROC)opengl_load_function("glUniform1f");
+  glUniform1i = (PFNGLUNIFORM1IPROC)opengl_load_function("glUniform1i");
+  glUniform3f = (PFNGLUNIFORM3FPROC)opengl_load_function("glUniform3f");
+  glUniform4f = (PFNGLUNIFORM4FPROC)opengl_load_function("glUniform4f");
+  glUniform4fv = (PFNGLUNIFORM4FVPROC)opengl_load_function("glUniform4fv");
+  glActiveTexture = (PFNGLACTIVETEXTUREPROC)opengl_load_function("glActiveTexture");
+  glGenBuffers = (PFNGLGENBUFFERSPROC)opengl_load_function("glGenBuffers");
+  glBindBuffer = (PFNGLBINDBUFFERPROC)opengl_load_function("glBindBuffer");
+  glBufferData = (PFNGLBUFFERDATAPROC)opengl_load_function("glBufferData");
+  glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)opengl_load_function("glEnableVertexAttribArray");
+  glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)opengl_load_function("glVertexAttribPointer");
+  glVertexAttribDivisor = (PFNGLVERTEXATTRIBDIVISORPROC)opengl_load_function("glVertexAttribDivisor");
+  glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCED)opengl_load_function("glDrawArraysInstanced");
 
 #pragma GCC diagnostic pop
+
+  if (opengl_failed_function_load_count > 0)
+  {
+    win32_print("[opengl] Some of the required OpenGL functions are not available on your machine (see log file above)!\n");
+    return 0;
+  }
 
   /* Set Pixel Format */
   {

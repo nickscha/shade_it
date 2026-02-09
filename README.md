@@ -262,8 +262,7 @@ For the next release of **SHADE_IT** the following features are planend.
 - [x] Efficient XInput state retrieval using HID notifications (only check connection state when a device is connected or disconnected from the machine). This improves performance since XInputGetState for disconnected or invalid IDs can cause full BUS scan and is quiet slow. With this change we only query XInputState if a device is connected/disconnected.
 - [x] win32 entry name change as suggested by @skeeto
 - [ ] Optimize stack usage with arena as suggested by @skeeto
-- [ ] Improved OpenGL functions loader. Some GPU Drivers can return from wglGetProcAddress: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
-- [ ] Use Uniform Buffer Objects (UBO) for better performance rather than single uniforms if the GPU driver allows it
+- [x] Improved OpenGL functions loader. Some GPU Drivers can return from wglGetProcAddress: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
 
 ### v0.6 Features
 - [x] Win32 ARM release build
