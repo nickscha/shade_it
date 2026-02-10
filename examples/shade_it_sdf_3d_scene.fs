@@ -82,6 +82,31 @@ vec3 calc_normal(in vec3 pos)
   ));
 }
 
+// https://iquilezles.org/articles/rmshadows/
+float calc_soft_shadow(in vec3 ro, in vec3 rd, in float mint, in float tmax, in float w)
+{
+	float res = 1.0;
+  float t = mint;
+  float ph = 1e10;
+  
+  for( int i=0; i<32; i++)
+  {
+    float h = map( ro + rd*t );
+
+    float y = h*h/(2.0*ph);
+    float d = sqrt(h*h-y*y);
+    res = min( res, d/(w*max(0.0,t-y)) );
+    ph = h;
+    
+    t += h;
+    
+    if( res<0.0001 || t>tmax ) break;
+      
+  }
+  res = clamp( res, 0.0, 1.0 );
+  return res*res*(3.0-2.0*res);
+}
+
 float cast_ray(in vec3 ro, in vec3 rd) {
 
   float t = 0.0;
@@ -141,7 +166,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     vec3 nor = calc_normal(pos);
 
     vec3 mate = vec3(0.18);
-
+    vec3  lig = normalize( vec3(-0.1, 0.3, 0.6) );
     vec3 sun_dir  = normalize(vec3(0.8, 0.4, 0.2));
     float sun_dif = clamp(dot(nor, sun_dir), 0.0, 1.0);
     float sun_sha = step(cast_ray(pos + nor * 0.001, sun_dir), 0.0);
