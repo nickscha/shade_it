@@ -112,6 +112,11 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define WM_INPUT 0x00FF
 #define WM_DEVICECHANGE 0x0219
 
+#define WM_LBUTTONDOWN 0x0201
+#define WM_LBUTTONUP 0x0202
+#define WM_RBUTTONDOWN 0x0204
+#define WM_RBUTTONUP 0x0205
+
 #define DBT_DEVICEARRIVAL 0x8000
 #define DBT_DEVICEREMOVECOMPLETE 0x8004
 #define DBT_DEVNODES_CHANGED 0x0007
@@ -161,6 +166,7 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define RIM_TYPEMOUSE 0
 #define RIM_TYPEKEYBOARD 1
 #define RI_KEY_BREAK 1
+#define RI_MOUSE_LEFT_BUTTON_DOWN 0x0001
 
 #define HIGH_PRIORITY_CLASS 0x80
 #define THREAD_PRIORITY_HIGHEST 2
@@ -1089,6 +1095,10 @@ typedef struct win32_shade_it_state
   i32 mouse_dy; /* Relative movement delta for y  */
   i32 mouse_x;  /* Mouse position on screen for x */
   i32 mouse_y;  /* Mouse position on screen for y */
+  u8 mouse_left_is_down;
+  u8 mouse_left_was_down;
+  u8 mouse_right_is_down;
+  u8 mouse_right_was_down;
 
   /* State Examples:
     Key Pressed:  state.keys_is_down[0x0D] && !state.keys_was_down[0x0D]
@@ -1225,6 +1235,11 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
 
       state->mouse_dx += dx;
       state->mouse_dy += dy;
+
+      if (mouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+      {
+        win32_print("mouse left down\n");
+      }
     }
   }
   break;
@@ -1238,6 +1253,18 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
     }
   }
   break;
+  case WM_LBUTTONDOWN:
+    state->mouse_left_is_down = 1;
+    break;
+  case WM_LBUTTONUP:
+    state->mouse_left_is_down = 0;
+    break;
+  case WM_RBUTTONDOWN:
+    state->mouse_right_is_down = 1;
+    break;
+  case WM_RBUTTONUP:
+    state->mouse_right_is_down = 0;
+    break;
   default:
   {
     result = DefWindowProcA(window, message, wParam, lParam);
@@ -2355,6 +2382,9 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           *dst++ = *src++;
           *dst++ = *src++;
         }
+
+        state.mouse_left_was_down = state.mouse_left_is_down;
+        state.mouse_right_was_down = state.mouse_right_is_down;
 
         /* Reset accumulated mouse relative speeds every frame before processing new mouse messages */
         state.mouse_dx = 0;
