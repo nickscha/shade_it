@@ -1526,11 +1526,20 @@ SHADE_IT_API void text_append_f64(text *src, f64 v, i32 decimals)
   src->length = len;
 }
 
+typedef enum glyph_state_flag
+{
+  GLYPH_STATE_NONE = 0,
+  GLYPH_STATE_BLINK = 1 << 8,
+  GLYPH_STATE_VFLIP = 1 << 9,
+  GLYPH_STATE_HFLIP = 1 << 10
+
+} glyph_state_flag;
+
 typedef struct glyph
 {
   u16 x;
   u16 y;
-  u16 packed_glyph_state; /* packs the glyph_index | (state_blink << 8); */
+  u16 packed_glyph_state; /* packs the glyph_index | glyph_state_flag */
   u16 packed_color;       /* rgb565_color */
 } glyph;
 
@@ -1541,63 +1550,65 @@ SHADE_IT_API u16 pack_rgb565(u8 r, u8 g, u8 b)
                ((b >> 3) << 0));
 }
 
-SHADE_IT_API u32 text_to_glyphs(
-    s8 *text,
-    glyph *out_glyphs,
-    u32 max_glyphs,
-    f32 start_x,
-    f32 start_y,
+SHADE_IT_API SHADE_IT_INLINE u16 glyph_advance_x(f32 font_scale)
+{
+  return (u16)((f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale);
+}
+
+SHADE_IT_API SHADE_IT_INLINE u16 glyph_advance_y(f32 font_scale)
+{
+  return (u16)(((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT);
+}
+
+SHADE_IT_API void glyph_add(
+    glyph *glyph_buffer,     /* pre allocated glyph array */
+    u32 glyph_buffer_size,   /* maximum size */
+    u32 *glyph_buffer_count, /* current size */
+    s8 *text,                /* text to append */
+    u16 *offset_x,           /* current offset x. Note: this is advanced by this function */
+    u16 *offset_y,           /* current offset y. Note: this is advanced by this function */
+    u16 color_rgb565,        /* rgb565 packed color. Use: pack_rgb565(255, 255, 255); */
+    glyph_state_flag state,  /* GLYPH_STATE_BLINK | GLYPH_STATE_VFLIP | GLYPH_STATE_HFLIP */
     f32 font_scale)
 {
-  u32 count = 0;
-  f32 x = start_x;
-  f32 y = start_y;
+  u16 start_x = *offset_x;
 
-  u16 default_color = pack_rgb565(255, 255, 255);
+  u16 advance_x = glyph_advance_x(font_scale);
+  u16 advance_y = glyph_advance_y(font_scale);
 
-  f32 advance_x = (f32)(SHADE_IT_FONT_GLYPH_WIDTH + 1) * font_scale;
-  f32 advance_y = ((f32)SHADE_IT_FONT_GLYPH_HEIGHT * font_scale) + (f32)SHADE_IT_FONT_GLYPH_HEIGHT;
-
-  u8 blink = 0;
-  u8 flip_vertical = 0;
-  u8 flip_horizontal = 0;
-
-  while (*text && count < max_glyphs)
+  while (*text && *glyph_buffer_count < glyph_buffer_size)
   {
     s8 c = *text++;
-    i32 glyph_index = font_char_to_glyph_index(c);
+    i32 glyph_index;
 
     if (c == '\n')
     {
-      x = start_x;
-      y += advance_y;
-      blink = 0;
-      flip_vertical = 0;
-      flip_horizontal = 0;
+      *offset_x = start_x;
+      *offset_y += advance_y;
       continue;
     }
 
     /* skip spaces explicitly */
     if (c == ' ')
     {
-      x += advance_x;
+      *offset_x += advance_x;
       continue;
     }
+
+    glyph_index = font_char_to_glyph_index(c);
 
     if (glyph_index < 0)
     {
       continue;
     }
 
-    out_glyphs[count].x = (u16)x;
-    out_glyphs[count].y = (u16)y;
-    out_glyphs[count].packed_glyph_state = glyph_index | ((glyph_index == 42 ? 1 : blink) << 8) | (flip_vertical << 9) | ((c == '>' ? 1 : flip_horizontal) << 10);
-    out_glyphs[count++].packed_color = default_color;
+    glyph_buffer[*glyph_buffer_count].x = *offset_x;
+    glyph_buffer[*glyph_buffer_count].y = *offset_y;
+    glyph_buffer[*glyph_buffer_count].packed_glyph_state = (u16)glyph_index | (u16)state;
+    glyph_buffer[(*glyph_buffer_count)++].packed_color = color_rgb565;
 
-    x += advance_x;
+    *offset_x += advance_x;
   }
-
-  return count;
 }
 
 /* #############################################################################
@@ -2579,109 +2590,191 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
       if (state.ui_enabled)
       {
-        s8 buffer[1024];
+
+#define GLYPH_BUFFER_SIZE 512
+        static glyph glyph_buffer[GLYPH_BUFFER_SIZE];
+        static u32 glyph_buffer_count = 0; /* Total glyph count */
+        static u32 glyph_count_static = 0; /* Static glyphs only need to be buffered once */
+        static u16 offset_x = 0;
+        static u16 offset_y = 0;
+        static u8 glyph_initialized = 0;
+        static s8 tmp[128];
+        static u32 handle_count = 0;
+        static process_memory_info mem = {0};
+        static f32 font_scale = 2.0f;
+
+        u16 default_color = pack_rgb565(255, 255, 255);
+
+        u16 advance_x = glyph_advance_x(font_scale);
+        u16 advance_y = glyph_advance_y(font_scale);
+        u16 separator_start_col = 11;
+        u16 text_start_col = separator_start_col + 2;
+        u16 offset_x_start = 10;
+        u16 offset_y_start = 10;
+
         text t = {0};
+        t.size = sizeof(tmp);
+        t.buffer = tmp;
 
-        glyph glyphs[1024];
-        u32 glyph_count;
-        f32 font_scale = 2.0f;
-
-        u32 handle_count = 0;
-        process_memory_info mem = {0};
-
-        /* build UI string */
-        t.size = sizeof(buffer);
-        t.buffer = buffer;
-
-        text_append_str(&t, "STATE      : ");
-        if (state.shader_paused)
+        if (!glyph_initialized)
         {
-          text_append_str(&t, "PAUSED ");
+          u32 i = 0;
+
+          offset_x = offset_x_start;
+          offset_y = offset_y_start;
+
+          glyph_add(
+              glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count,
+              "STATE\n"
+              "FPS\n"
+              "FPS TARGET\n"
+              "FPS RAW\n"
+              "FRAME\n"
+              "DELTA\n"
+              "TIME\n"
+              "MOUSE X/Y\n"
+              "MOUSE DX/DY\n"
+              "SIZE X/Y\n"
+              "THREADS\n"
+              "HANDLES\n"
+              "MEM WORK\n"
+              "MEM PEAK\n"
+              "MEM COMMIT\n"
+              "GL VENDOR\n"
+              "GL RENDER\n"
+              "GL VERSION\n"
+              "CONTROLLER\n"
+              "STICK L X/Y\n"
+              "STICK R X/Y\n"
+              "TRIGGER L/R\n"
+              "BUTTONS\n"
+              "GL ERROR FS\n",
+              &offset_x, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
+
+          offset_x = (u16)(offset_x_start + advance_x * separator_start_col);
+          offset_y = offset_y_start;
+
+          /* Vertical ":" separator*/
+          for (i = 0; i < 24; ++i)
+          {
+
+            if (i == 15)
+            {
+              u16 offset_x_new = (u16)(offset_x_start + advance_x * text_start_col);
+              glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, state.gl_vendor, &offset_x_new, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
+            }
+            else if (i == 16)
+            {
+              u16 offset_x_new = (u16)(offset_x_start + advance_x * text_start_col);
+              glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, state.gl_renderer, &offset_x_new, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
+            }
+            else if (i == 17)
+            {
+              u16 offset_x_new = (u16)(offset_x_start + advance_x * text_start_col);
+              glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, state.gl_version, &offset_x_new, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
+            }
+
+            glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, ":\n", &offset_x, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
+          }
+
+          glyph_count_static = glyph_buffer_count;
+          glyph_initialized = 1;
         }
+
+        offset_x = (u16)(offset_x_start + advance_x * text_start_col);
+        offset_y = offset_y_start;
+
+        glyph_buffer_count = glyph_count_static;
+
         if (state.borderless_enabled)
         {
-          text_append_str(&t, "BORDERLESS ");
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, "BORDERLESS ", &offset_x, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
         }
         else if (state.fullscreen_enabled)
         {
-          text_append_str(&t, "FULLSCREEN ");
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, "FULLSCREEN ", &offset_x, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
         }
         else
         {
-          text_append_str(&t, "WINDOWED ");
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, "WINDOWED ", &offset_x, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
+        }
+        if (state.shader_paused)
+        {
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, "PAUSED ", &offset_x, &offset_y, default_color, GLYPH_STATE_NONE, font_scale);
         }
         if (state.screen_recording_enabled)
         {
-          text_append_str(&t, "RECORDING ");
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, "RECORDING ", &offset_x, &offset_y, pack_rgb565(255, 0, 0), GLYPH_STATE_BLINK, font_scale);
         }
-        text_append_str(&t, "\nFPS        : ");
+
+#define CALC_GLYPH(txt, color)                                                                                                              \
+  do                                                                                                                                        \
+  {                                                                                                                                         \
+    offset_x = (u16)(offset_x_start + advance_x * text_start_col);                                                                          \
+    offset_y = (u16)(offset_y + advance_y);                                                                                                 \
+    glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, txt.buffer, &offset_x, &offset_y, color, GLYPH_STATE_NONE, font_scale); \
+    txt.length = 0;                                                                                                                         \
+  } while (0)
+
         text_append_f64(&t, state.iFrameRate, 2);
-        text_append_str(&t, "\nFPS TARGET : <");
+        CALC_GLYPH(t, default_color);
         text_append_f64(&t, state.target_frames_per_second, 2);
-        text_append_str(&t, ">\nFPS RAW    : ");
+        CALC_GLYPH(t, default_color);
         text_append_f64(&t, state.iFrameRateRaw, 2);
-        text_append_str(&t, "\nFRAME      : ");
+        CALC_GLYPH(t, default_color);
         text_append_i32(&t, state.iFrame);
-        text_append_str(&t, "\nDELTA      : ");
+        CALC_GLYPH(t, default_color);
         text_append_f64(&t, state.iTimeDelta, 6);
-        text_append_str(&t, "\nTIME       : ");
+        CALC_GLYPH(t, default_color);
         text_append_f64(&t, state.iTime, 6);
-        text_append_str(&t, "\nMOUSE X/Y  : ");
+        CALC_GLYPH(t, default_color);
         text_append_i32(&t, state.mouse_x);
         text_append_str(&t, "/");
         text_append_i32(&t, state.mouse_y);
-        text_append_str(&t, "\nMOUSE DX/DY: ");
+        CALC_GLYPH(t, default_color);
         text_append_i32(&t, state.mouse_dx);
         text_append_str(&t, "/");
         text_append_i32(&t, state.mouse_dy);
-        text_append_str(&t, "\nSIZE  X/Y  : ");
+        CALC_GLYPH(t, default_color);
         text_append_i32(&t, (i32)state.window_width);
         text_append_str(&t, "/");
         text_append_i32(&t, (i32)state.window_height);
-        text_append_str(&t, "\nTHREADS    : ");
+        CALC_GLYPH(t, default_color);
         text_append_i32(&t, thread_count);
+        CALC_GLYPH(t, default_color);
 
-        if (GetProcessHandleCount(GetCurrentProcess(), &handle_count))
-        {
-          text_append_str(&t, "\nHANDLES    : ");
-          text_append_i32(&t, (i32)handle_count);
-        }
+        GetProcessHandleCount(GetCurrentProcess(), &handle_count);
+        text_append_i32(&t, (i32)handle_count);
+        CALC_GLYPH(t, default_color);
 
-        if (win32_process_memory(&mem))
-        {
-          text_append_str(&t, "\nMEM WORK   : ");
-          text_append_i32(&t, (i32)(mem.working_set / 1024));
-          text_append_str(&t, "\nMEM PEAK   : ");
-          text_append_i32(&t, (i32)(mem.peak_working_set / 1024));
-          text_append_str(&t, "\nMEM COMMIT : ");
-          text_append_i32(&t, (i32)(mem.private_bytes / 1024));
-        }
+        win32_process_memory(&mem);
+        text_append_i32(&t, (i32)(mem.working_set / 1024));
+        CALC_GLYPH(t, default_color);
+        text_append_i32(&t, (i32)(mem.peak_working_set / 1024));
+        CALC_GLYPH(t, default_color);
+        text_append_i32(&t, (i32)(mem.private_bytes / 1024));
+        CALC_GLYPH(t, default_color);
 
-        text_append_str(&t, "\nGL VENDOR  : ");
-        text_append_str(&t, state.gl_vendor);
-        text_append_str(&t, "\nGL RENDER  : ");
-        text_append_str(&t, state.gl_renderer);
-        text_append_str(&t, "\nGL VERSION : ");
-        text_append_str(&t, state.gl_version);
-        text_append_str(&t, "\nGL ERROR FS: ");
-        text_append_str(&t, main_shader.header.had_failure ? shader_info_log : "NONE");
+        offset_y = (u16)(offset_y + advance_y * 3);
 
         if (state.controller.connected)
         {
-          text_append_str(&t, "\nCONTROLLER : CONNECTED");
-          text_append_str(&t, "\nSTICK L X/Y: ");
+          text_append_str(&t, "CONNECTED");
+          CALC_GLYPH(t, pack_rgb565(0, 255, 0));
           text_append_f64(&t, state.controller.stick_left_x, 6);
           text_append_str(&t, "/");
           text_append_f64(&t, state.controller.stick_left_y, 6);
-          text_append_str(&t, "\nSTICK R X/Y: ");
+          CALC_GLYPH(t, default_color);
           text_append_f64(&t, state.controller.stick_right_x, 6);
           text_append_str(&t, "/");
           text_append_f64(&t, state.controller.stick_right_y, 6);
-          text_append_str(&t, "\nTRIGGER L/R: ");
+          CALC_GLYPH(t, default_color);
           text_append_f64(&t, state.controller.trigger_left_value, 6);
           text_append_str(&t, "/");
           text_append_f64(&t, state.controller.trigger_right_value, 6);
-          text_append_str(&t, "\nBUTTONS    : ");
+          CALC_GLYPH(t, default_color);
+
+          text_append_str(&t, "");
 
           /* clang-format off */
           if (state.controller.button_a)       text_append_str(&t, "A ");
@@ -2697,24 +2790,29 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
           if (state.controller.shoulder_left)  text_append_str(&t, "LSHOULDER ");
           if (state.controller.shoulder_right) text_append_str(&t, "RSHOULDER ");
           /* clang-format on */
+
+          CALC_GLYPH(t, default_color);
         }
         else
         {
-          text_append_str(&t, "\nCONTROLLER : NOT FOUND");
+          text_append_str(&t, "NOT FOUND");
+          CALC_GLYPH(t, pack_rgb565(255, 165, 0));
+
+          offset_y = (u16)(offset_y + advance_y * 4);
         }
 
-        glyph_count = text_to_glyphs(
-            t.buffer,
-            glyphs,
-            sizeof(glyphs) / sizeof(glyphs[0]),
-            10.0f, /* x */
-            10.0f, /* y */
-            font_scale);
+        if (main_shader.header.had_failure)
+        {
+          text_append_str(&t, shader_info_log);
+          CALC_GLYPH(t, pack_rgb565(255, 0, 0));
+        }
+        else
+        {
+          text_append_str(&t, "NONE");
+          CALC_GLYPH(t, pack_rgb565(0, 255, 0));
+        }
 
-        /* TODO(nickscha): Measure GPU difference of STREAM_DRAW vs DYNAMIC_DRAW */
-        (void)GL_DYNAMIC_DRAW;
-
-        glBufferData(GL_ARRAY_BUFFER, (i32)(glyph_count * sizeof(glyph)), glyphs, GL_STREAM_DRAW);
+#undef CALC_GLYPH
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2726,7 +2824,10 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         glUniform1i(font_shader.loc_iTexture, 0);
         glUniform1f(font_shader.loc_iFontScale, font_scale);
         glBindVertexArray(font_vao);
-        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, glyph_count);
+
+        (void)GL_DYNAMIC_DRAW;
+        glBufferData(GL_ARRAY_BUFFER, (i32)(glyph_buffer_count * sizeof(glyph)), glyph_buffer, GL_STREAM_DRAW);
+        glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, glyph_buffer_count);
 
         glDisable(GL_BLEND);
       }
