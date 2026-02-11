@@ -393,7 +393,6 @@ WIN32_API(void)   Sleep(u32 dwMilliseconds);
 WIN32_API(void)   ExitProcess(u32 uExitCode);
 WIN32_API(i32)    PeekMessageA(MSG* lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax, u32 wRemoveMsg);
 WIN32_API(i32)    GetMessageA(MSG* lpMsg, void *hWnd, u32 wMsgFilterMin, u32 wMsgFilterMax);
-WIN32_API(i32)    TranslateMessage(MSG *lpMsg);
 WIN32_API(i64)    DispatchMessageA(MSG *lpMsg);
 WIN32_API(i64)    DefWindowProcA(void *hWnd, u32 Msg, u64 wParam, i64 lParam);
 WIN32_API(i64)    SetWindowLongPtrA(void *hWnd, i32 nIndex, i64 dwNewLong);
@@ -2317,7 +2316,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
       {
         MSG msg;
         GetMessageA(&msg, 0, 0, 0);
-        TranslateMessage(&msg);
         DispatchMessageA(&msg);
         continue;
       }
@@ -2364,7 +2362,6 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         while (PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
         {
-          TranslateMessage(&message);
           DispatchMessageA(&message);
         }
       }
