@@ -2395,7 +2395,7 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
         state.mouse_dx = 0;
         state.mouse_dy = 0;
 
-        while (PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
+        while (PeekMessageA(&message, state.window_handle, 0, 0, PM_REMOVE))
         {
           DispatchMessageA(&message);
         }
