@@ -2718,8 +2718,34 @@ SHADE_IT_API i32 start(i32 argc, u8 **argv)
 
         text_append_f64(&t, state.iFrameRate, 2);
         CALC_GLYPH(t, default_color);
-        text_append_f64(&t, state.target_frames_per_second, 2);
-        CALC_GLYPH(t, default_color);
+
+        /* Control Target FPS with arrow keys (0 = unlimited) */
+        {
+          u32 txt_length_temp = 0;
+
+          if (state.keys_is_down[0x25] && !state.keys_was_down[0x25]) /* Left Arrow */
+          {
+            state.target_frames_per_second -= state.target_frames_per_second < 10 ? state.target_frames_per_second : 10;
+          }
+
+          if (state.keys_is_down[0x27] && !state.keys_was_down[0x27]) /* Right Arrow */
+          {
+            state.target_frames_per_second += 10;
+          }
+
+          offset_x = (u16)(offset_x_start + advance_x * (text_start_col - 1));
+          offset_y = (u16)(offset_y + advance_y);
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, "<", &offset_x, &offset_y, pack_rgb565(255, 0, 0), GLYPH_STATE_BLINK, font_scale);
+          offset_y = (u16)(offset_y - advance_y);
+
+          text_append_f64(&t, state.target_frames_per_second, 2);
+          txt_length_temp = t.length;
+          CALC_GLYPH(t, default_color);
+
+          offset_x = (u16)(offset_x_start + advance_x * (text_start_col + txt_length_temp));
+          glyph_add(glyph_buffer, GLYPH_BUFFER_SIZE, &glyph_buffer_count, ">", &offset_x, &offset_y, pack_rgb565(0, 255, 0), GLYPH_STATE_BLINK | GLYPH_STATE_HFLIP, font_scale);
+        }
+
         text_append_f64(&t, state.iFrameRateRaw, 2);
         CALC_GLYPH(t, default_color);
         text_append_i32(&t, state.iFrame);

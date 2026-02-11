@@ -167,6 +167,13 @@ If you want to freeze/pause the current shader display you can press **P**.
 
 If you want to reset the current elapsed time (iTime) and processed frames (iFrame) you can press **R**.
 
+### Control Target FPS (Left/Right Arrow - 0.7 not released yet) 
+
+You can change the default target FPS (60) in the Debug UI by pressing **LEFT** or **RIGHT** arrow key.
+A target fps of 0 means to render as fast as possible without constraints.
+
+<a href="https://github.com/nickscha/shade_it"><img src="assets/shade_it_fps_control.png"></a>
+
 ### XInput Controller Support
 
 SHADE_IT supports XInput compatible controllers.
@@ -263,8 +270,7 @@ For the next release of **SHADE_IT** the following features are planend.
 - [x] win32 entry name change as suggested by @skeeto
 - [ ] Optimize stack usage with arena as suggested by @skeeto
 - [x] Improved OpenGL functions loader. Some GPU Drivers can return from wglGetProcAddress: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
-- [ ] Controllable target FPS via Debug UI
-- [ ] Controllable render resolution via Debug UI. Before shaders are rendered to the full window size. This change allows to set a smaller render resolution to improve framerate for performance hungry shaders. The lower resolution image will be than scaled up to the window size.
+- [x] Controllable target FPS via Debug UI (Use left or right arrow key when UI is enabled. Target FPS = 0 means unlimited)
 
 ### v0.6 Features
 - [x] Win32 ARM release build
