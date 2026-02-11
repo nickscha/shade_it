@@ -166,7 +166,9 @@ __declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1; /* AMD Force
 #define RIM_TYPEMOUSE 0
 #define RIM_TYPEKEYBOARD 1
 #define RI_KEY_BREAK 1
-#define RI_MOUSE_LEFT_BUTTON_DOWN 0x0001
+#define RI_MOUSE_WHEEL 0x0400
+
+#define WHEEL_DELTA 120
 
 #define HIGH_PRIORITY_CLASS 0x80
 #define THREAD_PRIORITY_HIGHEST 2
@@ -1095,6 +1097,7 @@ typedef struct win32_shade_it_state
   i32 mouse_dy; /* Relative movement delta for y  */
   i32 mouse_x;  /* Mouse position on screen for x */
   i32 mouse_y;  /* Mouse position on screen for y */
+  f32 mouse_scroll;
   u8 mouse_left_is_down;
   u8 mouse_left_was_down;
   u8 mouse_right_is_down;
@@ -1236,9 +1239,11 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       state->mouse_dx += dx;
       state->mouse_dy += dy;
 
-      if (mouse->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+      /* Scroll wheel */
+      if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
       {
-        win32_print("mouse left down\n");
+        i16 wheelDelta = (i16)mouse->usButtonData;
+        state->mouse_scroll += (f32)wheelDelta / (f32)WHEEL_DELTA;
       }
     }
   }
