@@ -1237,7 +1237,7 @@ SHADE_IT_API SHADE_IT_INLINE i64 win32_window_callback(void *window, u32 message
       i32 dy = mouse->lLastY;
 
       state->mouse_dx += dx;
-      state->mouse_dy += dy;
+      state->mouse_dy -= dy;
 
       /* Scroll wheel */
       if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
