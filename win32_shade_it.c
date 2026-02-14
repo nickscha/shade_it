@@ -681,6 +681,55 @@ typedef u32(__stdcall *XInputGetStateFunc)(u32 dwUserIndex, XINPUT_STATE *pState
 static XInputGetStateFunc XInputGetState = 0;
 
 /* #############################################################################
+ * # [SECTION] XInput Loader
+ * #############################################################################
+ */
+SHADE_IT_API u8 xinput_load(void)
+{
+  void *xinput_lib = LoadLibraryA("xinput1_4.dll");
+
+  if (!xinput_lib)
+  {
+    xinput_lib = LoadLibraryA("xinput1_3.dll");
+  }
+
+  if (!xinput_lib)
+  {
+    xinput_lib = LoadLibraryA("xinput9_1_0.dll");
+  }
+
+  if (!xinput_lib)
+  {
+    return 0;
+  }
+
+  *(void **)(&XInputGetState) = GetProcAddress(xinput_lib, "XInputGetState");
+
+  return 1;
+}
+
+SHADE_IT_API f32 xinput_process_thumbstick(i16 value, i16 deadzone)
+{
+  f32 result = 0.0f;
+
+  if (value > deadzone)
+  {
+    result = (f32)(value - deadzone) / (32767.0f - deadzone);
+  }
+  else if (value < -deadzone)
+  {
+    result = (f32)(value + deadzone) / (32768.0f - deadzone);
+  }
+
+  return result;
+}
+
+SHADE_IT_API SHADE_IT_INLINE f32 xinput_process_trigger(u8 value)
+{
+  return value > XINPUT_GAMEPAD_TRIGGER_THRESHOLD ? (f32)value / 255.0f : 0.0f;
+}
+
+/* #############################################################################
  * # [SECTION] WIN32 specifiy functions
  * #############################################################################
  */
@@ -910,8 +959,6 @@ SHADE_IT_API i32 win32_process_thread_count(void)
   return count;
 }
 
-#define KEYS_COUNT 256
-
 typedef struct win32_controller_state
 {
 
@@ -950,51 +997,6 @@ typedef struct win32_controller_state
   u8 check_needed; /* If a device is plugged in or disconnected we should check XInput controller state again */
 
 } win32_controller_state;
-
-SHADE_IT_API u8 xinput_load(void)
-{
-  void *xinput_lib = LoadLibraryA("xinput1_4.dll");
-
-  if (!xinput_lib)
-  {
-    xinput_lib = LoadLibraryA("xinput1_3.dll");
-  }
-
-  if (!xinput_lib)
-  {
-    xinput_lib = LoadLibraryA("xinput9_1_0.dll");
-  }
-
-  if (!xinput_lib)
-  {
-    return 0;
-  }
-
-  *(void **)(&XInputGetState) = GetProcAddress(xinput_lib, "XInputGetState");
-
-  return 1;
-}
-
-SHADE_IT_API f32 xinput_process_thumbstick(i16 value, i16 deadzone)
-{
-  f32 result = 0.0f;
-
-  if (value > deadzone)
-  {
-    result = (f32)(value - deadzone) / (32767.0f - deadzone);
-  }
-  else if (value < -deadzone)
-  {
-    result = (f32)(value + deadzone) / (32768.0f - deadzone);
-  }
-
-  return result;
-}
-
-SHADE_IT_API SHADE_IT_INLINE f32 xinput_process_trigger(u8 value)
-{
-  return value > XINPUT_GAMEPAD_TRIGGER_THRESHOLD ? (f32)value / 255.0f : 0.0f;
-}
 
 typedef struct process_memory_info
 {
@@ -1053,6 +1055,8 @@ u8 win32_process_memory(process_memory_info *out)
 
   return 1;
 }
+
+#define KEYS_COUNT 256
 
 typedef struct win32_shade_it_state
 {
@@ -1940,9 +1944,7 @@ SHADE_IT_API SHADE_IT_INLINE i32 opengl_create_context(win32_shade_it_state *sta
   return 1;
 }
 
-SHADE_IT_API i32 opengl_shader_compile(
-    s8 *shaderCode,
-    u32 shaderType)
+SHADE_IT_API i32 opengl_shader_compile(s8 *shaderCode, u32 shaderType)
 {
   u32 shaderId = glCreateShader(shaderType);
   i32 success;
@@ -1965,10 +1967,7 @@ SHADE_IT_API i32 opengl_shader_compile(
   return (i32)shaderId;
 }
 
-SHADE_IT_API i32 opengl_shader_create(
-    u32 *shader_program,
-    s8 *shader_vertex_code,
-    s8 *shader_fragment_code)
+SHADE_IT_API i32 opengl_shader_create(u32 *shader_program, s8 *shader_vertex_code, s8 *shader_fragment_code)
 {
   i32 vertex_shader_id;
   i32 fragment_shader_id;
