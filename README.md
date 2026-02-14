@@ -167,7 +167,7 @@ If you want to freeze/pause the current shader display you can press **P**.
 
 If you want to reset the current elapsed time (iTime) and processed frames (iFrame) you can press **R**.
 
-### Control Target FPS (Left/Right Arrow - 0.7 not released yet) 
+### Control Target FPS (Left/Right Arrow) 
 
 You can change the default target FPS (60) in the Debug UI by pressing **LEFT** or **RIGHT** arrow key.
 A target fps of 0 means to render as fast as possible without constraints.
@@ -265,11 +265,14 @@ void mainImage(out vec4 outColor, in vec2 fragCoord)
 
 For the next release of **SHADE_IT** the following features are planend.
 
+### v0.8 Features
+- [ ] Optimize stack usage with arena as suggested by @skeeto
+
 ### v0.7 Features (not released yet)
 - [x] Efficient XInput state retrieval using HID notifications (only check connection state when a device is connected or disconnected from the machine). This improves performance since XInputGetState for disconnected or invalid IDs can cause full BUS scan and is quiet slow. With this change we only query XInputState if a device is connected/disconnected.
 - [x] win32 entry name change as suggested by @skeeto
-- [ ] Optimize stack usage with arena as suggested by @skeeto
 - [x] Improved OpenGL functions loader. Some GPU Drivers can return from wglGetProcAddress: (void *)0x1, (void *)0x2, (void *)0x3, (void *)-1 instead of a NULL pointer!
+- [x] UI Font Rendering improvements (static glyphs are calcuated once)
 - [x] Controllable target FPS via Debug UI (Use left or right arrow key when UI is enabled. Target FPS = 0 means unlimited)
 
 ### v0.6 Features
