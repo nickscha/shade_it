@@ -66,7 +66,7 @@ You can now run the `win32_shade_it.exe` program.
 ### Running the program
 
 > [!IMPORTANT]
-> If you have donwloaded the release executeable depending on your platform use `win32_shade_it_x64.exe` or `win32_shade_it_arm.exe`
+> If you have downloaded the release executeable depending on your platform use `win32_shade_it_x64.exe` or `win32_shade_it_arm.exe`
 
 ```bat
 REM This expects a file named "shade_it.fs" to be present
